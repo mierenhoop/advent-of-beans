@@ -1,0 +1,30 @@
+html {
+    background-color: #9b9;
+    color: #111;
+}
+
+a { color: #226; }
+
+a:visited { color: #626; }
+
+input::placeholder {
+    color: #555;
+}
+
+::-webkit-outer-spin-button,
+::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+input {
+    color: #111;
+    background-color: #797;
+    border: none;
+}
+
+button {
+    border: none;
+    background-color: #477;
+}
+
+main {
+    padding: 1rem;
+}
