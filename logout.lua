@@ -6,4 +6,4 @@ end
 
 SetStatus(303)
 SetCookie(COOKIE_KEY, "", { expires = 0 })
-return SetHeader("Location", "/profile.lua")
+return SetHeader("Location", "/profile")

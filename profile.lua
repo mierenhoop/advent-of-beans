@@ -1,17 +1,12 @@
-local db = require"db"
-
-local html = require"html"
-local wrt, fmt = Write, string.format
-
 html.page_begin()
 
 local user_id = db.get_session_user_id()
 if user_id then
-  local name, link = db.urow("SELECT name, link FROM user WHERE id = ?", user_id)
+  local name, link = db.urow("SELECT name, link FROM user WHERE rowid = ?", user_id)
 
   wrt(fmt([[
   <p>Logged in as: <strong>%s</strong></p>
-  ]], EscapeHtml(name)))
+  ]], esc(name)))
 
   local silver, gold = db.urow([[
   SELECT COUNT(silver_time), COUNT(gold_time)
@@ -24,19 +19,19 @@ if user_id then
   ]], silver, gold))
 
   wrt(fmt([[
-  <form action="/update-profile.lua" method="POST">
+  <form action="/updateprofile" method="POST">
   <input type="url" name="link" placeholder="Link (optional)" value="%s">
   <button type="submit">Update</button>
   </form>
-  ]], EscapeHtml(link or "")))
+  ]], esc(link or "")))
   -- method don't really matter here
-  wrt[[<form action="/logout.lua">
+  wrt[[<form action="/logout">
   <button type="submit">Logout</button>
   </form>
   ]]
 else
   wrt[[
-  <form action="/login.lua" method="POST">
+  <form action="/login" method="POST">
   <input type="text" name="name" placeholder="name" />
   <button type="submit">Login</button>
   </form>
