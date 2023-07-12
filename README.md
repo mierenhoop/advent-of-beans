@@ -9,13 +9,12 @@ As of the time of writing it has the following features:
 * Leaderboard for everything & individual puzzles
 * Silver and gold stars
 * User profile page (for testing currently)
+* No javascript
 
 Todo list:
 * Login with github oauth (or alternative)
-* Don't use sqlite for storing answer times (this blocks and might fail), alternatives: PGSQL/redis/plain text in file system.
 * Alternative method of storing leaderboard
 * Better styling
-* Custom paths/routing
 * Rate limiting/DDOS protection
 * Support multiple events
 * The stats page
