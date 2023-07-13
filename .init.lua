@@ -1,4 +1,4 @@
-DB_FILE ="/tmp/out.db"
+assert(DB_FILE, "define DB_FILE in .args or from the command line")
 COOKIE_KEY="advent_session"
 
 local _db
@@ -60,14 +60,16 @@ local function fill_bucket(puzzle, amount)
 
   local entropy = os.time()
 
-  for i = 1, amount do
-    math.randomseed(entropy+i)
-    local input, silver, gold = f()
-    assert(input and silver)
-    db.urow([[
-    INSERT INTO bucket(puzzle, input, silver_answer, gold_answer) VALUES (?, ?, ?, ?)
-    ]], puzzle, input, silver, gold)
-  end
+  db.transaction(function()
+    for i = 1, amount do
+      math.randomseed(entropy+i)
+      local input, silver, gold = f()
+      assert(input and silver)
+      db.urow([[
+      INSERT INTO bucket(puzzle, input, silver_answer, gold_answer) VALUES (?, ?, ?, ?)
+      ]], puzzle, input, silver, gold)
+    end
+  end)
 end
 
 function db.get_user_bucket(user_id, puzzle)
@@ -75,7 +77,7 @@ function db.get_user_bucket(user_id, puzzle)
   SELECT bucket_id
   FROM user_puzzle
   WHERE puzzle = ?
-    AND user_id = ?
+  AND user_id = ?
   ]], puzzle, user_id)
 
   if not bucket then
@@ -124,17 +126,19 @@ function OnServerHeartbeat()
       SELECT name
       FROM puzzle
       ]] do
-      local score = 100
-      for user_id in db.urows([[
-        SELECT user_id
-        FROM user_puzzle
-        WHERE puzzle = ?
-        AND silver_time IS NOT NULL
-        ORDER BY silver_time
-        LIMIT 100
-        ]], name) do
-        users[user_id]=(users[user_id] or 0) + score
-        score=score-1
+      for _, atype in ipairs{"silver","gold"} do
+        local score = 100
+        for user_id in db.urows(([[
+          SELECT user_id
+          FROM user_puzzle
+          WHERE puzzle = ?
+          AND TYPE_time IS NOT NULL
+          ORDER BY TYPE_time
+          LIMIT 100
+          ]]):gsub("TYPE", atype), name) do
+          users[user_id]=(users[user_id] or 0) + score
+          score=score-1
+        end
       end
     end
     -- TODO: avoid this loop, add the score to leaderboard in loop above

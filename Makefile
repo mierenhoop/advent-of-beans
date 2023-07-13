@@ -1,12 +1,14 @@
 all: dev
 
-dev: /tmp/out.db
-	./redbean.com -D.
+DB_FILE=/tmp/out.db
 
-/tmp/out.db:
-	sqlite3 /tmp/out.db < schema.sql
+dev: $(DB_FILE)
+	./redbean.com -D. -e'DB_FILE="$(DB_FILE)"'
+
+$(DB_FILE):
+	sqlite3 $@ < schema.sql
 
 .PHONY: clean
 
 clean:
-	rm /tmp/out.db*
+	rm -f $(DB_FILE)*

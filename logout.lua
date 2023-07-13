@@ -1,4 +1,3 @@
-local db = require"db"
 local user_id = db.get_session_user_id()
 if user_id then
   db.urow("DELETE FROM session WHERE user_id = ?", user_id)
