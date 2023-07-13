@@ -18,12 +18,17 @@ end
 
 function db.urow(sql, ...)
   local stmt = prep(sql, ...)
-  return stmt:urows()(stmt)
+  local rows = table.pack(stmt:urows()(stmt))
+  stmt:finalize()
+  return table.unpack(rows)
 end
 
 function db.urows(sql, ...)
   local stmt = prep(sql, ...)
-  return stmt:urows(), stmt
+  local closer = setmetatable({}, {
+    __close = function() stmt:finalize() end
+  })
+  return stmt:urows(), stmt, nil, closer
 end
 
 function db.transaction(f)
