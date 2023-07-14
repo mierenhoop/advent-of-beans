@@ -1,4 +1,61 @@
-assert(DB_FILE, "define DB_FILE in .args or from the command line")
+local exe = arg[-1]
+local exedir = path.dirname(exe)
+
+local defaultdb = path.join(exedir, "aob.db")
+DB_FILE = os.getenv"AOB_DB_FILE" or defaultdb
+
+
+local usage = [[
+Usage: ]] .. exe .. [[ [OPTIONS] COMMAND [...]
+
+Options:
+  -d   Run as daemon
+  -h   View all other options
+
+Commands:
+  init               Initialze database
+  server             Run the server
+  generate [PUZZLE]  Generate a puzzle template at path PUZZLE
+  commit [PUZZLE]    Commit puzzle at path PUZZLE
+
+Database:
+  Default path: ']] .. defaultdb .. [['.
+  You can specify the database location with environment variable 'AOB_DB_FILE'.]]
+
+local function die(reason)
+  io.stderr:write(exe .. ": " .. reason .. "\n\n" .. usage)
+  unix.exit(1)
+end
+
+local cmd = arg[1]
+
+local function main()
+  if not cmd then
+    print(usage)
+    unix.exit(1)
+  elseif cmd:match"^init" then
+    local schema = assert(Slurp"/zip/schema.sql" or Slurp"schema.sql")
+
+    db.open()
+    db.exec(schema)
+
+    print("Database initialized at '" .. DB_FILE .. "'")
+
+    unix.exit(0)
+  elseif cmd:match"^gen" then
+    if not arg[2] then
+      die"no puzzle path provided"
+    end
+    unix.exit(0)
+  elseif cmd:match"^com" then
+    if not arg[2] then
+      die"no puzzle path provided"
+    end
+  elseif not cmd:match"^serve" then
+    die("invalid command '" .. cmd .. "'")
+  end
+end
+
 COOKIE_KEY="advent_session"
 
 local _db
@@ -102,7 +159,7 @@ function db.get_user_bucket(user_id, puzzle)
   return bucket
 end
 
-local function open_db()
+function db.open()
   _db = lsqlite3.open(DB_FILE)
   _db:busy_timeout(1000)
   db.exec[[
@@ -112,13 +169,13 @@ local function open_db()
 end
 
 function OnWorkerStart()
-  open_db()
+  db.open()
 end
 
 function OnServerHeartbeat()
   --TODO: probably horribly inefficient
   --TODO: fork here? permissions?
-  open_db()
+  db.open()
   db.transaction(function()
     local users = {}
     db.exec[[DELETE FROM leaderboard]]
@@ -151,8 +208,6 @@ function OnServerHeartbeat()
   _db:close()
 end
 
-ProgramHeartbeatInterval(3 * 1000) -- 10s
-
 wrt, fmt, esc = Write, string.format, EscapeHtml
 
 html = {}
@@ -163,12 +218,10 @@ function html.page_begin(title)
   wrt[[<meta charset="UTF-8">]]
   wrt[[<link rel="stylesheet" href="/style.css">]]
   wrt[[<nav>]]
-  wrt[[<a href="/">Advent</a>]]
-  wrt" | "
-  wrt[[<a href="/about">About</a>]]
-  wrt" | "
-  wrt[[<a href="/leaderboard">Leaderboard</a>]]
-  wrt" | "
+  wrt[[<a href="/">Advent</a> | ]]
+  wrt[[<a href="/about">About</a> | ]]
+  wrt[[<a href="/leaderboard">Leaderboard</a> | ]]
+  wrt[[<a href="/stats">Stats</a> | ]]
   local user_id = db.get_session_user_id()
   local name
   if user_id then
@@ -213,6 +266,9 @@ function OnHttpRequest()
 
   --print("Access", "/"..cmd..".lua")
 
-  return RoutePath("/"..cmd..".lua")
+  return Route(GetHost(), "/"..cmd..".lua")
 end
 
+main()
+
+ProgramHeartbeatInterval(3 * 1000) -- 10s

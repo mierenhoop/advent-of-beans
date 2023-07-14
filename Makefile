@@ -1,14 +1,24 @@
-all: dev
-
+RELEASE_EXE=/tmp/aob.com
 DB_FILE=/tmp/out.db
 
+DEV_RUN_CMD=AOB_DB_FILE=$(DB_FILE) ./redbean.com -D.
+
+all: dev
+
 dev: $(DB_FILE)
-	./redbean.com -D. -e'DB_FILE="$(DB_FILE)"'
+	$(DEV_RUN_CMD) server
 
 $(DB_FILE):
-	sqlite3 $@ < schema.sql
+	$(DEV_RUN_CMD) init
 
-.PHONY: clean
+$(RELEASE_EXE):
+	cp redbean.com $@
+	zip $@ .init.lua *.lua style.css schema.sql
+
+release: $(RELEASE_EXE)
+
+.PHONY: clean release
 
 clean:
-	rm -f $(DB_FILE)*
+	rm -f $(RELEASE_EXE)
+	rm -f $(DB_FILE) $(DB_FILE)-wal $(DB_FILE)-shm
