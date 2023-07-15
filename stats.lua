@@ -6,6 +6,7 @@ FROM (SELECT puzzle, COUNT(silver_time) silver_count
   FROM user_puzzle
   GROUP BY puzzle);
 ]] or math.huge)
+if norm == 0 then norm = math.huge end
 
 local maxstars = 20
 
@@ -18,16 +19,13 @@ wrt[[
 <th>Distribution</th>
 </tr>
 ]]
-for puzzle in db.urows[[
-  SELECT name
-  FROM puzzle
-  ORDER BY time_start ASC
-  ]] do
-  local gold, silver = db.urow([[
-  SELECT COUNT(gold_time), COUNT(silver_time)
+for puzzle, gold, silver in db.urows[[
+  SELECT puzzle, COUNT(gold_time), COUNT(silver_time)
   FROM user_puzzle
-  WHERE puzzle = ?
-  ]], puzzle)
+  INNER JOIN puzzle ON puzzle.name = user_puzzle.puzzle
+  GROUP BY puzzle
+  ORDER BY time_start
+  ]] do
 
   local total = math.ceil(silver / norm * maxstars)
   local ngold = math.ceil(gold / norm * maxstars)
