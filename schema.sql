@@ -23,7 +23,8 @@ CREATE TABLE IF NOT EXISTS achievement (
 CREATE TABLE IF NOT EXISTS puzzle (
   name       TEXT NOT NULL UNIQUE,
   time_start REAL NOT NULL, -- unix time
-  html       TEXT NOT NULL,
+  part1      TEXT NOT NULL,
+  part2      TEXT NOT NULL,
   gen_code   TEXT NOT NULL
 );
 
@@ -68,18 +69,16 @@ INSERT INTO user(name, link) VALUES ('Joe1', 'https://github.com/joe1'),
 ('Joe30', NULL);
 
 
-INSERT INTO puzzle (name, time_start, html, gen_code) VALUES (
+INSERT INTO puzzle (name, time_start, part1, part2, gen_code) VALUES (
   '01', UNIXEPOCH(), '
 <p>Add one to input</p>
 <em>Example:</em>
 <pre>
 9
 </pre>
-<p>The answer would be <code>10</code>.</p>
-$PART2$
+<p>The answer would be <code>10</code>.</p>','
 <p>Add two to input</p>
-<p>With the same input as before, the answer would be <code>10</code>.</p>
-  ', '
+<p>With the same input as before, the answer would be <code>10</code>.</p>', '
   local n = math.random(998)
   return n, n + 1, n + 2
 '), (
@@ -89,10 +88,8 @@ $PART2$
 <pre>
 9
 </pre>
-<p>The answer would be <code>36</code>.</p>
-$PART2$
+<p>The answer would be <code>36</code>.</p>','
 <p>Multiply by 5</p>
-<p>With the same input as before, the answer would be <code>45</code>.</p>
-  ', '
+<p>With the same input as before, the answer would be <code>45</code>.</p>', '
   local n = math.random(100, 249)
   return n, n * 4, n * 5')

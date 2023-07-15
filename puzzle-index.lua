@@ -1,5 +1,5 @@
-local h, time_start = db.urow([[
-SELECT html, time_start
+local p1, p2, time_start = db.urow([[
+SELECT part1, part2, time_start
 FROM puzzle WHERE name = ?
 ]], puzzle)
 
@@ -10,11 +10,6 @@ if time_start > GetTime() then return ServeError(403) end
 html.page_begin()
 
 wrt("<h1>"..esc(puzzle).."</h1>")
-local p1, p2
-do
-  local i, j = h:find("$PART2$", 1, true)
-  p1, p2 = h:sub(1, i-1), h:sub(j+1)
-end
 
 wrt(p1)
 

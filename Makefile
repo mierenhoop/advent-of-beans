@@ -17,7 +17,7 @@ $(RELEASE_EXE):
 
 release: $(RELEASE_EXE)
 
-.PHONY: clean release
+.PHONY: clean release $(RELEASE_EXE)
 
 clean:
 	rm -f $(RELEASE_EXE)

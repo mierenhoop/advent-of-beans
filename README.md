@@ -17,4 +17,4 @@ Todo list:
 * Better styling
 * Rate limiting/DDOS protection
 * Support multiple events
-* The stats page
+* Generate all buckets when puzzle added, assign bucket to user by hashing user-id puzzle-name mod n-buckets
