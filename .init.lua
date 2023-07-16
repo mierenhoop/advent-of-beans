@@ -98,11 +98,11 @@ local function main()
     local deco = get"deco.txt"
 
     db.urow([[
-    INSERT INTO puzzle (name, time_start, part1, part2, gen_code)
+    REPLACE INTO puzzle (name, time_start, part1, part2, gen_code)
     VALUES (?, ?, ?, ?, ?);
     ]], puzzle, t, p1, p2, gen)
 
-    print("Committed puzzle at '" .. p .. "'")
+    print("Committed puzzle '" .. puzzle .. "'")
 
     unix.exit(0)
   elseif not cmd:match"^serve" then
