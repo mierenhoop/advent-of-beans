@@ -9,32 +9,31 @@ local usage = [[
 Usage: ]] .. exe .. [[ [OPTIONS] COMMAND [...]
 
 Options:
-  -d   Run as daemon
-  -h   View all other options
+  -h   View all redbean options
 
 Commands:
-  init               Initialze database
+  init               Initialize database
   server             Run the server
   generate [PUZZLE]  Generate a puzzle template at path PUZZLE
   commit [PUZZLE]    Commit puzzle at path PUZZLE
 
 Database:
   Default path: ']] .. defaultdb .. [['.
-  You can specify the database location with environment variable 'AOB_DB_FILE'.]]
-
-local function die(reason)
-  io.stderr:write(exe .. ": " .. reason .. "\n\n" .. usage)
-  unix.exit(1)
-end
+  You can specify the database location with environment variable 'AOB_DB_FILE'.
+]]
 
 local cmd = arg[1]
 
 local function main()
   if not cmd then
-    print(usage)
-    unix.exit(1)
+    io.write(usage)
+    unix.exit(0)
   elseif cmd:match"^init" then
-    local schema = assert(Slurp"/zip/schema.sql" or Slurp"schema.sql")
+    if path.exists(DB_FILE) then
+      error("Database already exists at '" .. DB_FILE .. "'")
+    end
+
+    local schema = assert(Slurp"schema.sql")
 
     db.open()
     db.exec(schema)
@@ -43,16 +42,71 @@ local function main()
 
     unix.exit(0)
   elseif cmd:match"^gen" then
-    if not arg[2] then
-      die"no puzzle path provided"
+    local p = arg[2]
+    if not p then
+      error"no puzzle path provided"
     end
+
+    local puzzle = path.basename(p)
+
+    db.open()
+
+    local start, p1, p2, gen = db.urow([[
+    SELECT time_start, part1, part2, gen_code
+    FROM puzzle
+    WHERE name = ?
+    ]], puzzle)
+
+    local function put(filename, content)
+      if path.exists(path.join(p, filename)) then return end
+      assert(Barf(path.join(p, filename), content), 0644)
+    end
+
+    assert(unix.makedirs(p))
+
+    put("start.txt", FormatHttpDateTime(start or os.time()))
+    put("part1.html", p1 or "")
+    put("part2.html", p2 or "")
+    put("gen.lua", gen or "assert(false)")
+    put("deco.txt", ("-"):rep(49))
+
+    print("Generated puzzle template at '" .. p .. "'")
+
     unix.exit(0)
   elseif cmd:match"^com" then
-    if not arg[2] then
-      die"no puzzle path provided"
+    local p = arg[2]
+    if not p then
+      error"no puzzle path provided"
     end
+
+    local puzzle = path.basename(p)
+
+    db.open()
+
+    local function get(filename)
+      return assert(Slurp(path.join(p, filename)))
+    end
+
+    local start_txt = assert(get"start.txt":match"^%s*(%g.*%g)%s*$", "start.txt must not be empty")
+    local t = ParseHttpDateTime(start_txt)
+    assert(t ~= 0, "start.txt must be in RFC1123 format")
+    assert(start_txt:sub(-3) == "GMT", "start.txt: timezone must be 'GMT'")
+
+    local p1 = get"part1.html"
+    local p2 = get"part2.html"
+    local gen = get"gen.lua"
+    local deco = get"deco.txt"
+
+    db.urow([[
+    INSERT INTO puzzle (name, time_start, part1, part2, gen_code)
+    VALUES (?, ?, ?, ?, ?);
+    ]], puzzle, t, p1, p2, gen)
+
+    print("Committed puzzle at '" .. p .. "'")
+
+    unix.exit(0)
   elseif not cmd:match"^serve" then
-    die("invalid command '" .. cmd .. "'")
+    error("invalid command '" .. cmd .. "'")
   end
 end
 
@@ -269,6 +323,10 @@ function OnHttpRequest()
   return Route(GetHost(), "/"..cmd..".lua")
 end
 
-main()
+local ok, err = pcall(main)
+if not ok then
+  io.stderr:write(err .. "\n\n" .. usage)
+  unix.exit(1)
+end
 
 ProgramHeartbeatInterval(3 * 1000) -- 10s
