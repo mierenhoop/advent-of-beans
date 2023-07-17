@@ -1,7 +1,11 @@
+include .env
+export
+
 RELEASE_EXE=/tmp/aob.com
 DB_FILE=/tmp/out.db
+AOB_DB_FILE=$(DB_FILE)
 
-DEV_RUN_CMD=AOB_DB_FILE=$(DB_FILE) ./redbean.com -D.
+DEV_RUN_CMD=./redbean.com -D.
 
 all: dev
 
