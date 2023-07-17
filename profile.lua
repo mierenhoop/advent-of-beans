@@ -30,12 +30,24 @@ if user_id then
   </form>
   ]]
 else
-  wrt[[
-  <form action="/login" method="POST">
-  <input type="text" name="name" placeholder="name" />
-  <button type="submit">Login</button>
-  </form>
-  ]]
-end
+  local redir = ParseUrl(GetUrl())
+  redir.path="/login"
 
+  local link = "https://github.com/login/oauth/authorize"
+  .. "?scope="
+  .. "&client_id=" .. EscapeParam(GH_CLIENT_ID)
+  --.. "&redirect_uri=" .. EscapeParam(EncodeUrl(redir))
+
+  wrt(fmt([[
+  <a href="%s">
+  [Login with Github]
+  </a>
+  ]], esc(link)))
+  --wrt[[
+  --<form action="/login" method="POST">
+  --<input type="text" name="name" placeholder="name" />
+  --<button type="submit">Login</button>
+  --</form>
+  --]]
+end
 html.page_end()

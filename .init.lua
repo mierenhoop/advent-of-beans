@@ -4,6 +4,9 @@ local exedir = path.dirname(exe)
 local defaultdb = path.join(exedir, "aob.db")
 DB_FILE = os.getenv"AOB_DB_FILE" or defaultdb
 
+GH_CLIENT_ID = assert(os.getenv"AOB_GH_CLIENT_ID")
+GH_CLIENT_SECRET = assert(os.getenv"AOB_GH_CLIENT_SECRET")
+
 
 local usage = [[
 Usage: ]] .. exe .. [[ [OPTIONS] COMMAND [...]
