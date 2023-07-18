@@ -2,11 +2,12 @@ html.page_begin()
 
 local user_id = db.get_session_user_id()
 if user_id then
-  local name, link = db.urow("SELECT name, link FROM user WHERE rowid = ?", user_id)
+  local name, link, anon = db.urow("SELECT name, link, anonymous FROM user WHERE rowid = ?", user_id)
+  anon = anon ~= 0
 
-  wrt(fmt([[
-  <p>Logged in as: <strong>%s</strong></p>
-  ]], esc(name)))
+  wrt"<p>Logged in as: <strong>"
+  html.user(anon, name, link)
+  wrt"</strong></p>"
 
   local silver, gold = db.urow([[
   SELECT COUNT(silver_time), COUNT(gold_time)
@@ -21,11 +22,13 @@ if user_id then
   wrt(fmt([[
   <form action="/updateprofile" method="POST">
   <input type="url" name="link" placeholder="Link (optional)" value="%s">
+  <label for="anonymous">Anonymous?</label>
+  <input type="checkbox" id="anonymous" %s name="anonymous">
   <button type="submit">Update</button>
   </form>
-  ]], esc(link or "")))
+  ]], esc(link or ""), anon and "checked" or ""))
   -- method don't really matter here
-  wrt[[<form action="/logout">
+  wrt[[<br><form action="/logout">
   <button type="submit">Logout</button>
   </form>
   ]]

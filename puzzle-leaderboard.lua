@@ -2,8 +2,8 @@ html.leaderboard_begin()
 
 local function dayleaderboard(star)
   wrt[[<ol>]]
-  for name, link, time in db.urows(string.gsub([[
-    SELECT name, link, STAR_time
+  for name, link, anon, time in db.urows(string.gsub([[
+    SELECT name, link, anonymous, STAR_time
     FROM user_puzzle
     INNER JOIN user ON user_puzzle.user_id = user.rowid
     WHERE puzzle = ?
@@ -12,15 +12,8 @@ local function dayleaderboard(star)
     LIMIT 100
     ]], "STAR", star), puzzle) do
     wrt[[<li>]]
-    name = EscapeHtml(name)
-    local host = link and ParseUrl(link).host
     wrt(fmt("%.2f ", time))
-    if link and host then
-      wrt(fmt([[<a href="%s">%s</a><sub>[%s]</sub>]],
-      EscapeHtml(link), name, EscapeHtml(host)))
-    else
-      wrt(name)
-    end
+    html.user(anon~=0, name, link)
     wrt[[</li>]]
   end
   wrt[[</ol>]]

@@ -1,23 +1,18 @@
 html.leaderboard_begin()
 
+--TODO: anonymous
+
 wrt"<p>This leaderboard gets updated once every 10 seconds</p>"
 wrt[[<ol>]]
-for name, link, score in db.urows[[
-  SELECT name, link, score
+for name, link, anon, score in db.urows[[
+  SELECT name, link, anonymous, score
   FROM leaderboard
   INNER JOIN user ON user_id = user.rowid
   ORDER BY score DESC
   ]] do
   wrt[[<li>]]
-  name = esc(name)
-  local host = link and ParseUrl(link).host
   wrt(tostring(score) .. " ")
-  if link and host then
-    wrt(fmt([[<a href="%s">%s</a><sub>[%s]</sub>]],
-    esc(link), name, esc(host)))
-  else
-    wrt(name)
-  end
+  html.user(anon~=0, name, link)
   wrt[[</li>]]
 end
 wrt[[</ol>]]

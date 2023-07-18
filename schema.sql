@@ -3,8 +3,11 @@ PRAGMA journal_mode=wal;
 PRAGMA synchronous=normal;
 
 CREATE TABLE IF NOT EXISTS user (
-  name  TEXT NOT NULL,
-  link  TEXT
+  name      TEXT NOT NULL,
+  link      TEXT,
+  gh_id     INTEGER NOT NULL,
+  gh_auth   TEXT NOT NULL,
+  anonymous INTEGER NOT NULL DEFAULT TRUE -- 0 -> false, 1 -> true
   --score INTEGER NOT NULL DEFAULT 0,
 );
 
@@ -50,24 +53,6 @@ CREATE TABLE IF NOT EXISTS leaderboard (
   score   INTEGER NOT NULL DEFAULT 0,
   user_id INTEGER NOT NULL
 );
-
-INSERT INTO user(name, link) VALUES ('Joe1', 'https://github.com/joe1'),
-('Joe2', NULL), ('Joe3', 'https://github.com/joe3'),
-('Joe4', NULL), ('Joe5', 'https://github.com/joe5'),
-('Joe6', NULL), ('Joe7', 'https://github.com/joe7'),
-('Joe8', NULL), ('Joe9', 'https://github.com/joe9'),
-('Joe10', NULL), ('Joe11', 'https://github.com/joe11'),
-('Joe12', NULL), ('Joe13', 'https://github.com/joe13'),
-('Joe14', NULL), ('Joe15', 'https://github.com/joe15'),
-('Joe16', NULL), ('Joe17', 'https://github.com/joe17'),
-('Joe18', NULL), ('Joe19', 'https://github.com/joe19'),
-('Joe20', NULL), ('Joe21', 'https://github.com/joe21'),
-('Joe22', NULL), ('Joe23', 'https://github.com/joe23'),
-('Joe24', NULL), ('Joe25', 'https://github.com/joe25'),
-('Joe26', NULL), ('Joe27', 'https://github.com/joe27'),
-('Joe28', NULL), ('Joe29', 'https://github.com/joe29'),
-('Joe30', NULL);
-
 
 INSERT INTO puzzle (name, time_start, part1, part2, gen_code) VALUES (
   '01', UNIXEPOCH(), '

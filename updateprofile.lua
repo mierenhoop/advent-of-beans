@@ -1,6 +1,7 @@
 --TODO: rate limit this...
 
 local link = GetParam"link"
+local anon = GetParam"anonymous"
 
 if not link then return ServeError(400) end
 
@@ -13,6 +14,18 @@ if not user_id then
   return ServeRedirect(303, "/profile")
 end
 
-db.urow("UPDATE user SET link = ? WHERE rowid = ?", link, user_id)
+if not anon then
+  local gh_auth = db.urow("SELECT gh_auth FROM user WHERE rowid = ?", user_id)
+  local user_info = github_fetch_user(gh_auth)
+  local name = assert(user_info.login)
+  db.urow([[
+  UPDATE user
+  SET name = ?, link = ?, anonymous = false
+  WHERE rowid = ?]], name, link, user_id)
+else
+  db.urow("UPDATE user SET link = ?, anonymous = true WHERE rowid = ?",
+  link, user_id)
+end
+
 
 ServeRedirect(303, "/profile")

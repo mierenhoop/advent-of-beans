@@ -308,6 +308,36 @@ function html.leaderboard_begin()
   wrt"</p>"
 end
 
+function html.user(anon, name, link)
+  --TODO: avatar
+  if anon then
+    wrt("Anonymous #" .. tostring(db.get_session_user_id()))
+    return
+  end
+  name = EscapeHtml(name)
+  local host = link and ParseUrl(link).host
+  if link and host then
+    wrt(fmt([[<a href="%s">%s</a><sub>[%s]</sub>]],
+    EscapeHtml(link), name, EscapeHtml(host)))
+  else
+    wrt(name)
+  end
+end
+
+function github_fetch_user(gh_auth)
+  local opts = {
+    method = "GET",
+    headers = {
+      ["Accept"] = "application/vnd.github+json",
+      ["Authorization"] = "Bearer " .. gh_auth,
+      ["X-GitHub-Api-Version"] = "2022-11-28",
+    },
+  }
+  local stat, _, body = assert(Fetch("https://api.github.com/user", opts))
+  assert(stat == 200)
+  return assert(DecodeJson(body))
+end
+
 function OnHttpRequest()
   local p = GetPath()
 

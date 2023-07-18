@@ -20,23 +20,33 @@ local gh_at_link = "https://github.com/login/oauth/access_token"
 
 local stat, _, body = assert(Fetch(gh_at_link, opts))
 assert(stat == 200)
---TODO: should we use this token as cookie? probably not? hash this token?
+
 local token = assert(assert(DecodeJson(body)).access_token)
+local user_json = github_fetch_user(token)
 
-local opts = {
-  method = "GET",
-  headers = {
-    ["Accept"] = "application/vnd.github+json",
-    ["Authorization"] = "Bearer " .. token,
-    ["X-GitHub-Api-Version"] = "2022-11-28",
-  },
-}
-local stat, _, body = assert(Fetch("https://api.github.com/user", opts))
-assert(stat == 200)
-local user_json = assert(DecodeJson(body))
-local name, link = assert(user_json.login), assert(user_json.html_url)
+local gh_id = assert(user_json.id)
 
-local user_id = db.urow("INSERT INTO user(name, link) VALUES (?, ?) RETURNING rowid", name, link)
+local user_id = db.urow("SELECT rowid FROM user WHERE gh_id = ?", gh_id)
+
+if not user_id then
+  user_id = db.urow([[
+  INSERT INTO user(name, link, gh_id, gh_auth)
+  VALUES (?, ?, ?, ?)
+  RETURNING rowid]],
+  assert(user_json.login), assert(user_json.html_url), gh_id, token)
+
+  -- TODO: cache avatar when user calls updateprofile.lua
+  --if assert(unix.fork()) == 0 then -- async download avatar
+  --  local url = ParseUrl(assert(user_json.avatar_url))
+  --  table.insert(url.params, {"s", "20"}) -- get 20x20 image
+  --  stat, _, body = assert(Fetch(assert(EncodeUrl(url))))
+  --  print(EncodeUrl(url))
+  --  assert(stat == 200)
+  --  local avatar = EncodeBase64(body)
+  --  db.urow("UPDATE user SET avatar = ?", avatar)
+  --  unix.exit(0)
+  --end
+end
 
 local cookie = EncodeBase64(GetRandomBytes(18))
 
