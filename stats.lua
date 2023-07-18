@@ -23,6 +23,7 @@ for puzzle, gold, silver in db.urows[[
   SELECT puzzle, COUNT(gold_time), COUNT(silver_time)
   FROM user_puzzle
   INNER JOIN puzzle ON puzzle.name = user_puzzle.puzzle
+  WHERE time_start <= unixepoch()
   GROUP BY puzzle
   ORDER BY time_start
   ]] do
@@ -36,7 +37,7 @@ for puzzle, gold, silver in db.urows[[
   <td><a href="/%s">%s</a></td>
   <td>%d</td>
   <td>%d</td>
-  <td>%s</td>
+  <td><code>%s</code></td>
   </a>
   ]], puzzle, puzzle, gold, silver, ("*"):rep(ngold)..("%"):rep(nsilver)))
 end

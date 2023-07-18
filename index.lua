@@ -1,11 +1,11 @@
 html.page_begin()
 wrt[[<ul>]]
-for name, time_start in db.urows[[
-  SELECT name, time_start
+for name, started in db.urows[[
+  SELECT name, time_start <= unixepoch()
   FROM puzzle ORDER BY time_start
   ]] do
   wrt"<li>"
-  if GetTime() > time_start then
+  if started == 1 then
     wrt(fmt([[<a href="/%s">%s</a>]],
     esc(name), esc(name)))
   else
