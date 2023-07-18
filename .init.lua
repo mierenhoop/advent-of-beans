@@ -7,7 +7,6 @@ DB_FILE = os.getenv"AOB_DB_FILE" or defaultdb
 GH_CLIENT_ID = assert(os.getenv"AOB_GH_CLIENT_ID")
 GH_CLIENT_SECRET = assert(os.getenv"AOB_GH_CLIENT_SECRET")
 
-
 local usage = [[
 Usage: ]] .. exe .. [[ [OPTIONS] COMMAND [...]
 
@@ -308,12 +307,15 @@ function html.leaderboard_begin()
   wrt"</p>"
 end
 
-function html.user(anon, name, link)
+function html.user(user_id, anon, name, link)
   --TODO: avatar
   if anon then
-    wrt("Anonymous #" .. tostring(db.get_session_user_id()))
+    wrt("Anonymous #" .. tostring(user_id))
     return
   end
+
+  wrt(fmt([[<img src="/avatar-%d" height="20">]], user_id))
+
   name = EscapeHtml(name)
   local host = link and ParseUrl(link).host
   if link and host then
@@ -338,10 +340,43 @@ function github_fetch_user(gh_auth)
   return assert(DecodeJson(body))
 end
 
+function github_cache_avatar(user_info)
+  if assert(unix.fork()) == 0 then -- async download avatar
+    local url = ParseUrl(assert(user_info.avatar_url))
+    print(EncodeLua(url), user_info.avatar_url)
+    table.insert(url.params, {"s", "20"}) -- prefer 20x20 image
+    local stat, headers, body = assert(Fetch(assert(EncodeUrl(url))))
+    assert(stat == 200)
+    print(EncodeLua(headers))
+    local ct = assert(headers["Content-Type"])
+    db.open()
+    db.urow([[
+    REPLACE INTO avatar_cache(user_id, body, content_type) VALUES (?, ?, ?)
+    ]], assert(db.get_session_user_id()), EncodeBase64(body), ct)
+    _db:close()
+    unix.exit(0)
+  end
+end
+
 function OnHttpRequest()
   local p = GetPath()
 
   if p == "/style.css" then return ServeAsset("/style.css") end
+
+  local uid = p:match"^/avatar%-(%d+)"
+  if uid then
+    db.open()
+    local body, ct = db.urow([[
+    SELECT body, content_type
+    FROM avatar_cache
+    WHERE user_id = ?
+    ]], tonumber(uid))
+    if not body then return ServeError(404) end
+    SetStatus(200)
+    --TODO: cache/not modified header thing?
+    SetHeader("Content-Type", ct)
+    return wrt(DecodeBase64(body))
+  end
 
   local cmd
 

@@ -6,7 +6,7 @@ if user_id then
   anon = anon ~= 0
 
   wrt"<p>Logged in as: <strong>"
-  html.user(anon, name, link)
+  html.user(user_id, anon, name, link)
   wrt"</strong></p>"
 
   local silver, gold = db.urow([[

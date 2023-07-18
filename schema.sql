@@ -54,6 +54,12 @@ CREATE TABLE IF NOT EXISTS leaderboard (
   user_id INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS avatar_cache (
+  user_id      INTEGER NOT NULL UNIQUE,
+  body         TEXT NOT NULL,
+  content_type TEXT NOT NULL
+);
+
 INSERT INTO puzzle (name, time_start, part1, part2, gen_code) VALUES (
   '01', UNIXEPOCH(), '
 <p>Add one to input</p>

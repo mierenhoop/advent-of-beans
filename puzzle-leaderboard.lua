@@ -2,8 +2,8 @@ html.leaderboard_begin()
 
 local function dayleaderboard(star)
   wrt[[<ol>]]
-  for name, link, anon, time in db.urows(string.gsub([[
-    SELECT name, link, anonymous, STAR_time
+  for user_id, name, link, anon, time in db.urows(string.gsub([[
+    SELECT user_id, name, link, anonymous, STAR_time
     FROM user_puzzle
     INNER JOIN user ON user_puzzle.user_id = user.rowid
     WHERE puzzle = ?
@@ -13,7 +13,7 @@ local function dayleaderboard(star)
     ]], "STAR", star), puzzle) do
     wrt[[<li>]]
     wrt(fmt("%.2f ", time))
-    html.user(anon~=0, name, link)
+    html.user(user_id, anon~=0, name, link)
     wrt[[</li>]]
   end
   wrt[[</ol>]]

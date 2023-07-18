@@ -34,18 +34,6 @@ if not user_id then
   VALUES (?, ?, ?, ?)
   RETURNING rowid]],
   assert(user_json.login), assert(user_json.html_url), gh_id, token)
-
-  -- TODO: cache avatar when user calls updateprofile.lua
-  --if assert(unix.fork()) == 0 then -- async download avatar
-  --  local url = ParseUrl(assert(user_json.avatar_url))
-  --  table.insert(url.params, {"s", "20"}) -- get 20x20 image
-  --  stat, _, body = assert(Fetch(assert(EncodeUrl(url))))
-  --  print(EncodeUrl(url))
-  --  assert(stat == 200)
-  --  local avatar = EncodeBase64(body)
-  --  db.urow("UPDATE user SET avatar = ?", avatar)
-  --  unix.exit(0)
-  --end
 end
 
 local cookie = EncodeBase64(GetRandomBytes(18))

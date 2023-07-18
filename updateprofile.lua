@@ -22,6 +22,8 @@ if not anon then
   UPDATE user
   SET name = ?, link = ?, anonymous = false
   WHERE rowid = ?]], name, link, user_id)
+
+  github_cache_avatar(user_info)
 else
   db.urow("UPDATE user SET link = ?, anonymous = true WHERE rowid = ?",
   link, user_id)
