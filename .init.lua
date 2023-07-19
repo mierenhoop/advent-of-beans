@@ -7,116 +7,14 @@ DB_FILE = os.getenv"AOB_DB_FILE" or defaultdb
 GH_CLIENT_ID = assert(os.getenv"AOB_GH_CLIENT_ID")
 GH_CLIENT_SECRET = assert(os.getenv"AOB_GH_CLIENT_SECRET")
 
-local usage = [[
-Usage: ]] .. exe .. [[ [OPTIONS] COMMAND [...]
-
-Options:
-  -h   View all redbean options
-
-Commands:
-  init               Initialize database
-  server             Run the server
-  generate [PUZZLE]  Generate a puzzle template at path PUZZLE
-  commit [PUZZLE]    Commit puzzle at path PUZZLE
-
-Database:
-  Default path: ']] .. defaultdb .. [['.
-  You can specify the database location with environment variable 'AOB_DB_FILE'.
-]]
-
-local cmd = arg[1]
-
-local function main()
-  if not cmd then
-    io.write(usage)
-    unix.exit(0)
-  elseif cmd:match"^init" then
-    if path.exists(DB_FILE) then
-      error("Database already exists at '" .. DB_FILE .. "'")
-    end
-
-    local schema = assert(Slurp"schema.sql")
-
-    db.open()
-    db.exec(schema)
-
-    print("Database initialized at '" .. DB_FILE .. "'")
-
-    unix.exit(0)
-  elseif cmd:match"^gen" then
-    local p = arg[2]
-    if not p then
-      error"no puzzle path provided"
-    end
-
-    local puzzle = path.basename(p)
-
-    db.open()
-
-    local start, p1, p2, gen = db.urow([[
-    SELECT time_start, part1, part2, gen_code
-    FROM puzzle
-    WHERE name = ?
-    ]], puzzle)
-
-    local function put(filename, content)
-      if path.exists(path.join(p, filename)) then return end
-      assert(Barf(path.join(p, filename), content), 0644)
-    end
-
-    assert(unix.makedirs(p))
-
-    put("start.txt", FormatHttpDateTime(start or os.time()))
-    put("part1.html", p1 or "")
-    put("part2.html", p2 or "")
-    put("gen.lua", gen or "assert(false)")
-    put("deco.txt", ("-"):rep(49))
-
-    print("Generated puzzle template at '" .. p .. "'")
-
-    unix.exit(0)
-  elseif cmd:match"^com" then
-    local p = arg[2]
-    if not p then
-      error"no puzzle path provided"
-    end
-
-    local puzzle = path.basename(p)
-
-    db.open()
-
-    local function get(filename)
-      return assert(Slurp(path.join(p, filename)))
-    end
-
-    local start_txt = assert(get"start.txt":match"^%s*(%g.*%g)%s*$", "start.txt must not be empty")
-    local t = ParseHttpDateTime(start_txt)
-    assert(t ~= 0, "start.txt must be in RFC1123 format")
-    assert(start_txt:sub(-3) == "GMT", "start.txt: timezone must be 'GMT'")
-
-    local p1 = get"part1.html"
-    local p2 = get"part2.html"
-    local gen = get"gen.lua"
-    local deco = get"deco.txt"
-
-    db.urow([[
-    REPLACE INTO puzzle (name, time_start, part1, part2, gen_code)
-    VALUES (?, ?, ?, ?, ?);
-    ]], puzzle, t, p1, p2, gen)
-
-    print("Committed puzzle '" .. puzzle .. "'")
-
-    unix.exit(0)
-  elseif not cmd:match"^serve" then
-    error("invalid command '" .. cmd .. "'")
-  end
-end
-
 COOKIE_KEY="advent_session"
 
-local _db
 db = {}
+html = {}
+Github = {}
+wrt, fmt, esc = Write, string.format, EscapeHtml
 
+local _db
 local function prep(sql, ...)
   local stmt = _db:prepare(sql)
   if not stmt then error(_db:errmsg()) end
@@ -224,49 +122,7 @@ function db.open()
   ]]
 end
 
-function OnWorkerStart()
-  db.open()
-end
 
-function OnServerHeartbeat()
-  --TODO: probably horribly inefficient
-  --TODO: fork here? permissions?
-  db.open()
-  db.transaction(function()
-    local users = {}
-    db.exec[[DELETE FROM leaderboard]]
-    for name in db.urows[[
-      SELECT name
-      FROM puzzle
-      ]] do
-      for _, atype in ipairs{"silver","gold"} do
-        local score = 100
-        for user_id in db.urows(([[
-          SELECT user_id
-          FROM user_puzzle
-          WHERE puzzle = ?
-          AND TYPE_time IS NOT NULL
-          ORDER BY TYPE_time
-          LIMIT 100
-          ]]):gsub("TYPE", atype), name) do
-          users[user_id]=(users[user_id] or 0) + score
-          score=score-1
-        end
-      end
-    end
-    -- TODO: avoid this loop, add the score to leaderboard in loop above
-    for user_id, score in pairs(users) do
-      db.urow([[
-      INSERT INTO leaderboard(user_id, score) VALUES (?, ?)
-      ]], user_id, score)
-    end
-  end)
-  _db:close()
-end
-
-wrt, fmt, esc = Write, string.format, EscapeHtml
-
-html = {}
 
 function html.page_begin(title)
   wrt[[<!DOCTYPE html>]]
@@ -326,7 +182,7 @@ function html.user(user_id, anon, name, link)
   end
 end
 
-function github_fetch_user(gh_auth)
+function Github.fetch_user(gh_auth)
   local opts = {
     method = "GET",
     headers = {
@@ -340,7 +196,7 @@ function github_fetch_user(gh_auth)
   return assert(DecodeJson(body))
 end
 
-function github_cache_avatar(user_info)
+function Github.cache_avatar(user_info)
   if assert(unix.fork()) == 0 then -- async download avatar
     local url = ParseUrl(assert(user_info.avatar_url))
     print(EncodeLua(url), user_info.avatar_url)
@@ -356,6 +212,116 @@ function github_cache_avatar(user_info)
     _db:close()
     unix.exit(0)
   end
+end
+
+local function main()
+  local cmd = arg[1]
+  if not cmd then
+    io.write(usage)
+    unix.exit(0)
+  elseif cmd:match"^init" then
+    if path.exists(DB_FILE) then
+      error("Database already exists at '" .. DB_FILE .. "'")
+    end
+
+    local schema = assert(Slurp"schema.sql")
+
+    db.open()
+    db.exec(schema)
+
+    print("Database initialized at '" .. DB_FILE .. "'")
+
+    unix.exit(0)
+  elseif cmd:match"^gen" then
+    local p = arg[2]
+    if not p then
+      error"no puzzle path provided"
+    end
+
+    local puzzle = path.basename(p)
+
+    db.open()
+
+    local start, p1, p2, gen = db.urow([[
+    SELECT time_start, part1, part2, gen_code
+    FROM puzzle
+    WHERE name = ?
+    ]], puzzle)
+
+    local function put(filename, content)
+      if path.exists(path.join(p, filename)) then return end
+      assert(Barf(path.join(p, filename), content), 0644)
+    end
+
+    assert(unix.makedirs(p))
+
+    put("start.txt", FormatHttpDateTime(start or os.time()))
+    put("part1.html", p1 or "")
+    put("part2.html", p2 or "")
+    put("gen.lua", gen or "assert(false)")
+    put("deco.txt", ("-"):rep(49))
+
+    print("Generated puzzle template at '" .. p .. "'")
+
+    unix.exit(0)
+  elseif cmd:match"^com" then
+    local p = arg[2]
+    if not p then
+      error"no puzzle path provided"
+    end
+
+    local puzzle = path.basename(p)
+
+    db.open()
+
+    local function get(filename)
+      return assert(Slurp(path.join(p, filename)))
+    end
+
+    local start_txt = assert(get"start.txt":match"^%s*(%g.*%g)%s*$", "start.txt must not be empty")
+    local t = ParseHttpDateTime(start_txt)
+    assert(t ~= 0, "start.txt must be in RFC1123 format")
+    assert(start_txt:sub(-3) == "GMT", "start.txt: timezone must be 'GMT'")
+
+    local p1 = get"part1.html"
+    local p2 = get"part2.html"
+    local gen = get"gen.lua"
+    local deco = get"deco.txt"
+
+    db.urow([[
+    REPLACE INTO puzzle (name, time_start, part1, part2, gen_code)
+    VALUES (?, ?, ?, ?, ?);
+    ]], puzzle, t, p1, p2, gen)
+
+    print("Committed puzzle '" .. puzzle .. "'")
+
+    unix.exit(0)
+  elseif not cmd:match"^serve" then
+    error("invalid command '" .. cmd .. "'")
+  end
+end
+
+local usage = [[
+Usage: ]] .. exe .. [[ [OPTIONS] COMMAND [...]
+
+Options:
+  -h   View all redbean options
+
+Commands:
+  init               Initialize database
+  server             Run the server
+  generate [PUZZLE]  Generate a puzzle template at path PUZZLE
+  commit [PUZZLE]    Commit puzzle at path PUZZLE
+
+Database:
+  Default path: ']] .. defaultdb .. [['.
+  You can specify the database location with environment variable 'AOB_DB_FILE'.
+]]
+
+local ok, err = pcall(main)
+if not ok then
+  io.stderr:write(err .. "\n\n" .. usage)
+  unix.exit(1)
 end
 
 function OnHttpRequest()
@@ -391,10 +357,44 @@ function OnHttpRequest()
   return Route(GetHost(), "/"..cmd..".lua")
 end
 
-local ok, err = pcall(main)
-if not ok then
-  io.stderr:write(err .. "\n\n" .. usage)
-  unix.exit(1)
+function OnWorkerStart()
+  db.open()
+end
+
+function OnServerHeartbeat()
+  --TODO: probably horribly inefficient
+  --TODO: fork here? permissions?
+  db.open()
+  db.transaction(function()
+    local users = {}
+    db.exec[[DELETE FROM leaderboard]]
+    for name in db.urows[[
+      SELECT name
+      FROM puzzle
+      ]] do
+      for _, atype in ipairs{"silver","gold"} do
+        local score = 100
+        for user_id in db.urows(([[
+          SELECT user_id
+          FROM user_puzzle
+          WHERE puzzle = ?
+          AND TYPE_time IS NOT NULL
+          ORDER BY TYPE_time
+          LIMIT 100
+          ]]):gsub("TYPE", atype), name) do
+          users[user_id]=(users[user_id] or 0) + score
+          score=score-1
+        end
+      end
+    end
+    -- TODO: avoid this loop, add the score to leaderboard in loop above
+    for user_id, score in pairs(users) do
+      db.urow([[
+      INSERT INTO leaderboard(user_id, score) VALUES (?, ?)
+      ]], user_id, score)
+    end
+  end)
+  _db:close()
 end
 
 ProgramHeartbeatInterval(3 * 1000) -- 10s

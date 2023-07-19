@@ -16,14 +16,14 @@ end
 
 if not anon then
   local gh_auth = db.urow("SELECT gh_auth FROM user WHERE rowid = ?", user_id)
-  local user_info = github_fetch_user(gh_auth)
+  local user_info = Github.fetch_user(gh_auth)
   local name = assert(user_info.login)
   db.urow([[
   UPDATE user
   SET name = ?, link = ?, anonymous = false
   WHERE rowid = ?]], name, link, user_id)
 
-  github_cache_avatar(user_info)
+  Github.cache_avatar(user_info)
 else
   db.urow("UPDATE user SET link = ?, anonymous = true WHERE rowid = ?",
   link, user_id)

@@ -22,7 +22,7 @@ local stat, _, body = assert(Fetch(gh_at_link, opts))
 assert(stat == 200)
 
 local token = assert(assert(DecodeJson(body)).access_token)
-local user_json = github_fetch_user(token)
+local user_json = Github.fetch_user(token)
 
 local gh_id = assert(user_json.id)
 

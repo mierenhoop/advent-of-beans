@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS achievement (
 
 CREATE TABLE IF NOT EXISTS puzzle (
   name       TEXT NOT NULL UNIQUE,
-  time_start REAL NOT NULL, -- unix time TODO: make this sqlite time type and compare with 'now'
+  time_start INTEGER NOT NULL, -- unix time
   part1      TEXT NOT NULL,
   part2      TEXT NOT NULL,
   gen_code   TEXT NOT NULL
