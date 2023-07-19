@@ -365,35 +365,69 @@ function OnServerHeartbeat()
   --TODO: probably horribly inefficient
   --TODO: fork here? permissions?
   db.open()
-  db.transaction(function()
-    local users = {}
-    db.exec[[DELETE FROM leaderboard]]
-    for name in db.urows[[
-      SELECT name
-      FROM puzzle
-      ]] do
-      for _, atype in ipairs{"silver","gold"} do
-        local score = 100
-        for user_id in db.urows(([[
-          SELECT user_id
-          FROM user_puzzle
-          WHERE puzzle = ?
-          AND TYPE_time IS NOT NULL
-          ORDER BY TYPE_time
-          LIMIT 100
-          ]]):gsub("TYPE", atype), name) do
-          users[user_id]=(users[user_id] or 0) + score
-          score=score-1
-        end
-      end
-    end
-    -- TODO: avoid this loop, add the score to leaderboard in loop above
-    for user_id, score in pairs(users) do
-      db.urow([[
-      INSERT INTO leaderboard(user_id, score) VALUES (?, ?)
-      ]], user_id, score)
-    end
-  end)
+
+  db.exec[[
+  BEGIN TRANSACTION;
+
+  DELETE FROM leaderboard;
+
+  INSERT INTO leaderboard(user_id, score)
+  SELECT user_id, SUM(silver_score) AS score
+  FROM (
+  SELECT user_id,
+  (100+1-row_number() OVER (PARTITION BY puzzle ORDER BY silver_time)) AS silver_score
+  FROM user_puzzle
+  WHERE silver_time IS NOT NULL
+  )
+  INNER JOIN user ON user.rowid = user_id
+  GROUP BY user_id;
+
+  UPDATE leaderboard
+  SET score = score + gold_lead.new_score
+  FROM
+  (SELECT user_id, SUM(gold_score) AS new_score
+  FROM (
+  SELECT user_id,
+  (100+1-row_number() OVER (PARTITION BY puzzle ORDER BY gold_time)) AS gold_score
+  FROM user_puzzle
+  WHERE gold_time IS NOT NULL
+  )
+  INNER JOIN user ON user.rowid = user_id
+  GROUP BY user_id) AS gold_lead
+  WHERE gold_lead.user_id = leaderboard.user_id;
+
+  COMMIT;
+  ]]
+
+  --db.transaction(function()
+  --  local users = {}
+  --  db.exec[[DELETE FROM leaderboard]]
+  --  for name in db.urows[[
+  --    SELECT name
+  --    FROM puzzle
+  --    ]] do
+  --    for _, atype in ipairs{"silver","gold"} do
+  --      local score = 100
+  --      for user_id in db.urows(([[
+  --        SELECT user_id
+  --        FROM user_puzzle
+  --        WHERE puzzle = ?
+  --        AND TYPE_time IS NOT NULL
+  --        ORDER BY TYPE_time
+  --        LIMIT 100
+  --        ]]):gsub("TYPE", atype), name) do
+  --        users[user_id]=(users[user_id] or 0) + score
+  --        score=score-1
+  --      end
+  --    end
+  --  end
+  --  -- TODO: avoid this loop, add the score to leaderboard in loop above
+  --  for user_id, score in pairs(users) do
+  --    db.urow([[
+  --    INSERT INTO leaderboard(user_id, score) VALUES (?, ?)
+  --    ]], user_id, score)
+  --  end
+  --end)
   _db:close()
 end
 

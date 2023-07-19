@@ -14,6 +14,7 @@ dev: $(DB_FILE)
 
 $(DB_FILE):
 	$(DEV_RUN_CMD) init
+	sqlite3 $(DB_FILE) < test.sql
 
 $(RELEASE_EXE):
 	cp redbean.com $@

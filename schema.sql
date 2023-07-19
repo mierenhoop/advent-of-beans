@@ -50,8 +50,8 @@ CREATE TABLE IF NOT EXISTS bucket(
 );
 
 CREATE TABLE IF NOT EXISTS leaderboard (
-  score   INTEGER NOT NULL DEFAULT 0,
-  user_id INTEGER NOT NULL
+  user_id INTEGER UNIQUE NOT NULL,
+  score   INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS avatar_cache (
@@ -59,28 +59,3 @@ CREATE TABLE IF NOT EXISTS avatar_cache (
   body         TEXT NOT NULL,
   content_type TEXT NOT NULL
 );
-
-INSERT INTO puzzle (name, time_start, part1, part2, gen_code) VALUES (
-  '01', UNIXEPOCH(), '
-<p>Add one to input</p>
-<em>Example:</em>
-<pre>
-9
-</pre>
-<p>The answer would be <code>10</code>.</p>','
-<p>Add two to input</p>
-<p>With the same input as before, the answer would be <code>10</code>.</p>', '
-  local n = math.random(998)
-  return n, n + 1, n + 2
-'), (
-  '02', UNIXEPOCH()+10, '
-<p>Multiply by four</p>
-<em>Example:</em>
-<pre>
-9
-</pre>
-<p>The answer would be <code>36</code>.</p>','
-<p>Multiply by 5</p>
-<p>With the same input as before, the answer would be <code>45</code>.</p>', '
-  local n = math.random(100, 249)
-  return n, n * 4, n * 5')
