@@ -12,8 +12,14 @@ end
 local user_id = db.get_session_user_id()
 if not user_id then return ServeError(400) end -- TODO: or not authorized?
 
-local bucket, fails, next_try, puzzle_time = db.urow(fmt([[
-SELECT bucket_id, fails, next_try, %s_time
+local fails, next_try = db.urow([[
+SELECT fails, next_try
+FROM user
+WHERE rowid = ?
+]], user_id)
+
+local bucket, puzzle_time = db.urow(fmt([[
+SELECT bucket_id, %s_time
 FROM user_puzzle 
 WHERE user_id = ?
   AND puzzle = ?
@@ -39,19 +45,23 @@ if answer == target_answer then
   WHERE name = ?
   ]], puzzle)
 
-  --TODO: use plain files to combat sqlite write lock
-  --local timefmt = "/tmp/time-%s-%d-%d"
-  --Barf(fmt(timefmt, "gold", puzzle_id, user_id), tostring(time), 0644, unix.O_WRONLY|unix.O_CREAT|unix.O_EXCL)
-  db.urow(fmt([[
-  UPDATE user_puzzle
-  SET %s_time = ?, fails = 0
-  WHERE puzzle = ?
-  AND user_id = ?
-  ]], target), time-time_start, puzzle, user_id)
+  db.transaction(function()
+    db.urow([[
+    UPDATE user
+    SET fails = NULL
+    WHERE rowid = ?
+    ]], user_id)
+    db.urow(fmt([[
+    UPDATE user_puzzle
+    SET %s_time = ?
+    WHERE puzzle = ?
+    AND user_id = ?
+    ]], target), time-time_start, puzzle, user_id)
+  end)
 
   Log(kLogInfo, fmt("user %d got puzzle %d at %f", user_id, puzzle, time))
 else
-  fails = fails + 1
+  fails = (fails or 0)+ 1
   -- 1 > 10s
   -- 2 > 30s
   -- 3 > 60s
@@ -64,13 +74,12 @@ else
   end
 
   db.urow([[
-  UPDATE user_puzzle
+  UPDATE user
   SET fails = ?,
   fail_msg = ?,
-  next_try = ?
-  WHERE user_id = ?
-  AND puzzle = ?
-  ]], fails, fail_msg, GetTime() + waiting_time, user_id, puzzle)
+  next_try = UNIXEPOCH()+?
+  WHERE rowid = ?
+  ]], fails, fail_msg, waiting_time, user_id)
   Log(kLogInfo, fmt("user %d failed puzzle %d", user_id, puzzle))
 end
 

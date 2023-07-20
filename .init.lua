@@ -372,29 +372,12 @@ function OnServerHeartbeat()
   DELETE FROM leaderboard;
 
   INSERT INTO leaderboard(user_id, score)
-  SELECT user_id, SUM(silver_score) AS score
-  FROM (
-  SELECT user_id,
-  (100+1-row_number() OVER (PARTITION BY puzzle ORDER BY silver_time)) AS silver_score
-  FROM user_puzzle
-  WHERE silver_time IS NOT NULL
-  )
-  INNER JOIN user ON user.rowid = user_id
-  GROUP BY user_id;
+  SELECT user_id, score FROM all_silver;
 
   UPDATE leaderboard
-  SET score = score + gold_lead.new_score
-  FROM
-  (SELECT user_id, SUM(gold_score) AS new_score
-  FROM (
-  SELECT user_id,
-  (100+1-row_number() OVER (PARTITION BY puzzle ORDER BY gold_time)) AS gold_score
-  FROM user_puzzle
-  WHERE gold_time IS NOT NULL
-  )
-  INNER JOIN user ON user.rowid = user_id
-  GROUP BY user_id) AS gold_lead
-  WHERE gold_lead.user_id = leaderboard.user_id;
+  SET score = leaderboard.score + all_gold.score
+  FROM all_gold
+  WHERE all_gold.user_id = leaderboard.user_id;
 
   COMMIT;
   ]]

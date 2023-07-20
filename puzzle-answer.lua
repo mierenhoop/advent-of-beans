@@ -7,8 +7,13 @@ end
 
 if not puzzle then return ServeError(400) end
 
-local silver_time, gold_time, fails, next_try, fail_msg = db.urow([[
-SELECT silver_time, gold_time, fails, next_try, fail_msg FROM user_puzzle
+local fails, next_try, fail_msg = db.urow([[
+SELECT fails, next_try, fail_msg FROM user
+WHERE rowid = ?
+]], user_id)
+
+local silver_time, gold_time = db.urow([[
+SELECT silver_time, gold_time FROM user_puzzle
 WHERE user_id = ?
 AND puzzle = ?
 ]], user_id, puzzle)
@@ -20,8 +25,6 @@ html.page_begin()
 if next_try and GetTime() < next_try then
   wrt(fmt("<p>Your answer was %s</p>", fail_msg))
   wrt(fmt("<p>Wait %.0f seconds</p>", next_try - GetTime()))
-elseif fails > 0 then
-  wrt(fmt([[<p>You failed at attempt %d</p>]], fails))
 elseif answer_time then
   -- TODO: floating point rounding errors?? else just store time as integer
   local target = (answer_time == gold_time) and "gold" or "silver"
