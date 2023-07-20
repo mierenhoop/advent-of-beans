@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS user_puzzle(
   user_id     INTEGER NOT NULL,
   puzzle      TEXT NOT NULL,
   bucket_id   INTEGER NOT NULL,
-  last_try    INTEGER, -- unix time
+  fail_msg    TEXT,
   next_try    INTEGER, -- unix time maybe we don't need the previous
   silver_time REAL,
   gold_time   REAL,

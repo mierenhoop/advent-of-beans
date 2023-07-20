@@ -7,8 +7,8 @@ end
 
 if not puzzle then return ServeError(400) end
 
-local silver_time, gold_time, fails, next_try = db.urow([[
-SELECT silver_time, gold_time, fails, next_try FROM user_puzzle
+local silver_time, gold_time, fails, next_try, fail_msg = db.urow([[
+SELECT silver_time, gold_time, fails, next_try, fail_msg FROM user_puzzle
 WHERE user_id = ?
 AND puzzle = ?
 ]], user_id, puzzle)
@@ -18,6 +18,7 @@ local answer_time = gold_time or silver_time
 html.page_begin()
 
 if next_try and GetTime() < next_try then
+  wrt(fmt("<p>Your answer was %s</p>", fail_msg))
   wrt(fmt("<p>Wait %.0f seconds</p>", next_try - GetTime()))
 elseif fails > 0 then
   wrt(fmt([[<p>You failed at attempt %d</p>]], fails))

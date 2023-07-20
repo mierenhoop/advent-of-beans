@@ -58,13 +58,19 @@ else
   -- 4+ > 120s
   local waiting_time = ({[1]=10,[2]=30,[3]=60,[4]=120})[math.min(fails, 4)]
 
+  local fail_msg = "not correct"
+  if type(target_answer) == "number" then
+    fail_msg = answer < target_answer and "too low" or "too high"
+  end
+
   db.urow([[
   UPDATE user_puzzle
   SET fails = ?,
+  fail_msg = ?,
   next_try = ?
   WHERE user_id = ?
   AND puzzle = ?
-  ]], fails, GetTime() + waiting_time, user_id, puzzle)
+  ]], fails, fail_msg, GetTime() + waiting_time, user_id, puzzle)
   Log(kLogInfo, fmt("user %d failed puzzle %d", user_id, puzzle))
 end
 

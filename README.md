@@ -12,7 +12,6 @@ As of the time of writing it has the following features:
 * No javascript
 
 Todo list:
-* Alternative method of storing leaderboard
 * Better styling
 * Rate limiting/DDOS protection
 * Support multiple events
