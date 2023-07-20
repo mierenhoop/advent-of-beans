@@ -7,7 +7,6 @@ CREATE TABLE IF NOT EXISTS user (
   gh_auth   TEXT NOT NULL,
   anonymous INTEGER NOT NULL DEFAULT TRUE, -- 0 -> false, 1 -> true
 
-  fail_msg    TEXT,
   next_try    INTEGER,
   fails       INTEGER
 );

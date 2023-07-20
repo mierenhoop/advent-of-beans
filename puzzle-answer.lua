@@ -7,40 +7,48 @@ end
 
 if not puzzle then return ServeError(400) end
 
-local fails, next_try, fail_msg = db.urow([[
-SELECT fails, next_try, fail_msg FROM user
+local cookie = DecodeJson(DecodeBase64(GetCookie(COOKIE_ANSWER)))
+if not cookie then
+  Log(kLogWarning, "user visited answer with expired cookie")
+  return ServeError(400)
+end
+
+if type(cookie) ~= "table"
+  or (cookie.target ~= "gold" and cookie.target ~= "silver") then
+  return ServeError(400)
+end
+
+local fails, next_try = db.urow([[
+SELECT fails, next_try FROM user
 WHERE rowid = ?
 ]], user_id)
 
-local silver_time, gold_time = db.urow([[
-SELECT silver_time, gold_time FROM user_puzzle
+local answer_time = db.urow(fmt([[
+SELECT %s_time FROM user_puzzle
 WHERE user_id = ?
 AND puzzle = ?
-]], user_id, puzzle)
-
-local answer_time = gold_time or silver_time
+]], cookie.target), user_id, puzzle)
 
 html.page_begin()
 
 if next_try and GetTime() < next_try then
-  wrt(fmt("<p>Your answer was %s</p>", fail_msg))
+  wrt(fmt("<p>Your answer was %s</p>", esc(cookie.fail_msg))) --TODO: don't show when still waiting
   wrt(fmt("<p>Wait %.0f seconds</p>", next_try - GetTime()))
 elseif answer_time then
   -- TODO: floating point rounding errors?? else just store time as integer
-  local target = (answer_time == gold_time) and "gold" or "silver"
   wrt(fmt([[
   <p>Your received the <strong>%s</strong> star.</p>
   <p>Finished puzzle in %.2f seconds.</p>
-  ]], target, answer_time))
+  ]], cookie.target, answer_time))
   local place = db.urow(fmt([[
   SELECT COUNT(silver_time)
   FROM user_puzzle
   WHERE puzzle = ?
-    AND %s_time <= ?
-  ]], target), puzzle, answer_time)
+  AND %s_time <= ?
+  ]], cookie.target), puzzle, answer_time)
   wrt(fmt([[
   <p>You placed %d</p>
-  ]], place))
+  ]], place)) --TODO: use consistent view
 else
   return ServeError(400)
 end

@@ -8,6 +8,9 @@ GH_CLIENT_ID = assert(os.getenv"AOB_GH_CLIENT_ID")
 GH_CLIENT_SECRET = assert(os.getenv"AOB_GH_CLIENT_SECRET")
 
 COOKIE_KEY="advent_session"
+COOKIE_ANSWER="advent_answer"
+
+LEADERBOARD_INTERVAL = 3
 
 db = {}
 html = {}
@@ -414,4 +417,4 @@ function OnServerHeartbeat()
   _db:close()
 end
 
-ProgramHeartbeatInterval(3 * 1000) -- 10s
+ProgramHeartbeatInterval(LEADERBOARD_INTERVAL * 1000) -- 10s

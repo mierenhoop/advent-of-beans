@@ -32,6 +32,10 @@ end
 
 if puzzle_time then return ServeError(400) end -- already correct answer
 
+SetStatus(303)
+
+local cookie = { target = target }
+
 local target_answer = db.urow(fmt([[
 SELECT %s_answer
 FROM bucket
@@ -68,19 +72,20 @@ else
   -- 4+ > 120s
   local waiting_time = ({[1]=10,[2]=30,[3]=60,[4]=120})[math.min(fails, 4)]
 
-  local fail_msg = "not correct"
+  cookie.fail_msg = "not correct"
   if type(target_answer) == "number" then
-    fail_msg = answer < target_answer and "too low" or "too high"
+    cookie.fail_msg = answer < target_answer and "too low" or "too high"
   end
 
   db.urow([[
   UPDATE user
   SET fails = ?,
-  fail_msg = ?,
   next_try = UNIXEPOCH()+?
   WHERE rowid = ?
-  ]], fails, fail_msg, waiting_time, user_id)
+  ]], fails, waiting_time, user_id)
   Log(kLogInfo, fmt("user %d failed puzzle %d", user_id, puzzle))
 end
 
-ServeRedirect(303, fmt("/%s/answer",puzzle))
+SetCookie(COOKIE_ANSWER, EncodeBase64(EncodeJson(cookie))) -- TODO: expire 10s
+
+SetHeader("Location", fmt("/%s/answer",puzzle))

@@ -1,8 +1,7 @@
 html.leaderboard_begin()
 
---TODO: anonymous
-
-wrt"<p>This leaderboard gets updated once every 10 seconds</p>"
+wrt(fmt("<p>This leaderboard gets updated once every %d seconds</p>",
+LEADERBOARD_INTERVAL))
 wrt[[<ol>]]
 for user_id, name, link, anon, score in db.urows[[
   SELECT user_id, name, link, anonymous, score
