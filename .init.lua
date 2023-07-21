@@ -11,6 +11,7 @@ COOKIE_KEY="advent_session"
 COOKIE_ANSWER="advent_answer"
 
 LEADERBOARD_INTERVAL = 3
+BUCKET_AMOUNT=1000
 
 db = {}
 html = {}
@@ -104,10 +105,7 @@ function db.get_user_bucket(user_id, puzzle)
     ORDER BY RANDOM()
     LIMIT 1;
     ]], puzzle)
-    if not bucket then
-      fill_bucket(puzzle, 10)
-      goto randombucket
-    end
+    assert(bucket)
     db.urow([[
     INSERT INTO user_puzzle(user_id, puzzle, bucket_id)
     VALUES (?, ?, ?)
@@ -232,6 +230,8 @@ local function main()
     db.open()
     db.exec(schema)
 
+    fill_bucket(puzzle, BUCKET_AMOUNT)
+
     print("Database initialized at '" .. DB_FILE .. "'")
 
     unix.exit(0)
@@ -295,6 +295,8 @@ local function main()
     REPLACE INTO puzzle (name, time_start, part1, part2, gen_code)
     VALUES (?, ?, ?, ?, ?);
     ]], puzzle, t, p1, p2, gen)
+
+    --TODO: for each user db.get_user_bucket
 
     print("Committed puzzle '" .. puzzle .. "'")
 
@@ -384,36 +386,6 @@ function OnServerHeartbeat()
 
   COMMIT;
   ]]
-
-  --db.transaction(function()
-  --  local users = {}
-  --  db.exec[[DELETE FROM leaderboard]]
-  --  for name in db.urows[[
-  --    SELECT name
-  --    FROM puzzle
-  --    ]] do
-  --    for _, atype in ipairs{"silver","gold"} do
-  --      local score = 100
-  --      for user_id in db.urows(([[
-  --        SELECT user_id
-  --        FROM user_puzzle
-  --        WHERE puzzle = ?
-  --        AND TYPE_time IS NOT NULL
-  --        ORDER BY TYPE_time
-  --        LIMIT 100
-  --        ]]):gsub("TYPE", atype), name) do
-  --        users[user_id]=(users[user_id] or 0) + score
-  --        score=score-1
-  --      end
-  --    end
-  --  end
-  --  -- TODO: avoid this loop, add the score to leaderboard in loop above
-  --  for user_id, score in pairs(users) do
-  --    db.urow([[
-  --    INSERT INTO leaderboard(user_id, score) VALUES (?, ?)
-  --    ]], user_id, score)
-  --  end
-  --end)
   _db:close()
 end
 

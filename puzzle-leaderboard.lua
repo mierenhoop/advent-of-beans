@@ -8,7 +8,7 @@ local function dayleaderboard(star)
     INNER JOIN user ON user_puzzle.user_id = user.rowid
     WHERE puzzle = ?
       AND STAR_time IS NOT NULL
-    ORDER BY STAR_time ASC
+    ORDER BY STAR_time ASC, user_id
     LIMIT 100
     ]], "STAR", star), puzzle) do
     wrt[[<li>]]

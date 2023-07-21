@@ -3,8 +3,6 @@ SELECT part1, part2, time_start
 FROM puzzle WHERE name = ?
 ]], puzzle)
 
-if not time_start then return ServeError(400) end
-
 if time_start > GetTime() then return ServeError(403) end
 
 html.page_begin()
@@ -21,7 +19,7 @@ if not user_id then
   return
 end
 
-db.get_user_bucket(user_id, puzzle)
+db.get_user_bucket(user_id, puzzle) --TODO: preload this
 
 local silver_time, gold_time = db.urow([[
 SELECT silver_time, gold_time

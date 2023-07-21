@@ -55,7 +55,7 @@ CREATE VIEW IF NOT EXISTS all_silver AS
 SELECT user_id, SUM(silver_score) AS score
 FROM (
   SELECT user_id,
-  (100+1-row_number() OVER (PARTITION BY puzzle ORDER BY silver_time)) AS silver_score
+  (100+1-row_number() OVER (PARTITION BY puzzle ORDER BY silver_time, user_id)) AS silver_score
   FROM user_puzzle
   WHERE silver_time IS NOT NULL
 )
@@ -66,7 +66,7 @@ CREATE VIEW IF NOT EXISTS all_gold AS
 SELECT user_id, SUM(gold_score) AS score
 FROM (
   SELECT user_id,
-  (100+1-row_number() OVER (PARTITION BY puzzle ORDER BY gold_time)) AS gold_score
+  (100+1-row_number() OVER (PARTITION BY puzzle ORDER BY gold_time, user_id)) AS gold_score
   FROM user_puzzle
   WHERE gold_time IS NOT NULL
 )
