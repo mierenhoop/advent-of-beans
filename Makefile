@@ -14,11 +14,10 @@ dev: $(DB_FILE)
 
 $(DB_FILE):
 	$(DEV_RUN_CMD) init
-	sqlite3 $(DB_FILE) < test.sql
 
 $(RELEASE_EXE):
 	cp redbean.com $@
-	zip $@ .init.lua *.lua style.css schema.sql
+	zip $@ .init.lua *.lua style.css schema.sql test.sql
 
 release: $(RELEASE_EXE)
 

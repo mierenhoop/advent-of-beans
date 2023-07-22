@@ -1,5 +1,3 @@
-local time = GetTime() -- first to get most accurate reading
-
 local answer = tonumber(GetParam"answer")
 local target = GetParam"type"
 
@@ -43,12 +41,6 @@ WHERE rowid = ?
 ]], target), bucket)
 
 if answer == target_answer then
-  local time_start = db.urow([[
-  SELECT time_start
-  FROM puzzle
-  WHERE name = ?
-  ]], puzzle)
-
   db.transaction(function()
     db.urow([[
     UPDATE user
@@ -57,10 +49,10 @@ if answer == target_answer then
     ]], user_id)
     db.urow(fmt([[
     UPDATE user_puzzle
-    SET %s_time = ?
+    SET %s_time = UNIXEPOCH()-(SELECT time_start FROM puzzle WHERE name = ?)
     WHERE puzzle = ?
     AND user_id = ?
-    ]], target), time-time_start, puzzle, user_id)
+    ]], target), puzzle, puzzle, user_id)
   end)
 
   Log(kLogInfo, fmt("user %d got puzzle %d at %f", user_id, puzzle, time))

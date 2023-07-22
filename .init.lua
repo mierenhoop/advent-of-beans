@@ -230,7 +230,11 @@ local function main()
     db.open()
     db.exec(schema)
 
-    fill_bucket(puzzle, BUCKET_AMOUNT)
+    db.exec(assert(Slurp"test.sql"))
+
+    for puzzle in db.urows"SELECT name FROM puzzle" do
+      fill_bucket(puzzle, BUCKET_AMOUNT)
+    end
 
     print("Database initialized at '" .. DB_FILE .. "'")
 
@@ -296,7 +300,11 @@ local function main()
     VALUES (?, ?, ?, ?, ?);
     ]], puzzle, t, p1, p2, gen)
 
-    --TODO: for each user db.get_user_bucket
+    fill_bucket(puzzle, BUCKET_AMOUNT)
+
+    for user in db.urows[[SELECT rowid FROM user]] do
+      db.get_user_bucket(user, puzzle)
+    end
 
     print("Committed puzzle '" .. puzzle .. "'")
 

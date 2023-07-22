@@ -28,15 +28,17 @@ CREATE TABLE IF NOT EXISTS puzzle (
   time_start INTEGER NOT NULL, -- unix time
   part1      TEXT NOT NULL,
   part2      TEXT NOT NULL,
-  gen_code   TEXT NOT NULL
+  gen_code   TEXT NOT NULL,
+
+  leader_size INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS user_puzzle(
   user_id     INTEGER NOT NULL,
   puzzle      TEXT NOT NULL,
   bucket_id   INTEGER NOT NULL,
-  silver_time REAL,
-  gold_time   REAL
+  silver_time INTEGER,
+  gold_time   INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS bucket(
