@@ -47,6 +47,13 @@ if answer == target_answer then
     SET fails = NULL
     WHERE rowid = ?
     ]], user_id)
+    local pos = db.urow(([[
+    UPDATE puzzle
+    SET STAR_size = STAR_size + 1
+    WHERE name = ?
+    RETURNING STAR_size
+    ]]):gsub("STAR",target), puzzle)
+    cookie.pos = pos
     db.urow(fmt([[
     UPDATE user_puzzle
     SET %s_time = UNIXEPOCH()-(SELECT time_start FROM puzzle WHERE name = ?)
@@ -55,7 +62,7 @@ if answer == target_answer then
     ]], target), puzzle, puzzle, user_id)
   end)
 
-  Log(kLogInfo, fmt("user %d got puzzle %d at %f", user_id, puzzle, time))
+  Log(kLogInfo, fmt("user %d got puzzle %s", user_id, puzzle))
 else
   fails = (fails or 0)+ 1
   -- 1 > 10s

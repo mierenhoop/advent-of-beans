@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS puzzle (
   part2      TEXT NOT NULL,
   gen_code   TEXT NOT NULL,
 
-  leader_size INTEGER NOT NULL DEFAULT 0
+  silver_size INTEGER NOT NULL DEFAULT 0,
+  gold_size INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS user_puzzle(

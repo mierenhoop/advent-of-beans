@@ -32,6 +32,10 @@ for puzzle, gold, silver in db.urows[[
   local ngold = math.ceil(gold / norm * maxstars)
   local nsilver = total - ngold
 
+  local stars = fmt([[
+  <span class="stat-gold">%s</span><span class="stat-silver">%s</span>
+  ]], ("*"):rep(ngold), ("*"):rep(nsilver))
+
   wrt(fmt([[
   <tr>
   <td><a href="/%s">%s</a></td>
@@ -39,7 +43,7 @@ for puzzle, gold, silver in db.urows[[
   <td>%d</td>
   <td><code>%s</code></td>
   </a>
-  ]], puzzle, puzzle, gold, silver, ("*"):rep(ngold)..("%"):rep(nsilver)))
+  ]], puzzle, puzzle, gold, silver, stars))
 end
 wrt"</table>"
 

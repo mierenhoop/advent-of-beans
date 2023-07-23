@@ -11,9 +11,6 @@ input::placeholder {
     color: #555;
 }
 
-::-webkit-outer-spin-button,
-::-webkit-inner-spin-button { -webkit-appearance: none; }
-
 input {
     display: block;
     color: #111;
@@ -29,3 +26,7 @@ button {
 main {
     padding: 1rem;
 }
+
+.stat-silver { color: grey; }
+.stat-gold { color: yellow; }
+
