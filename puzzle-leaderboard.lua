@@ -8,7 +8,7 @@ local function dayleaderboard(star)
     INNER JOIN user ON achievement.user_id = user.rowid
     WHERE puzzle = ?
       AND type = ?
-    ORDER BY achievement.rowid
+    ORDER BY achievement.time, achievement.rowid
     LIMIT 100
     ]], puzzle, star) do
     wrt[[<li>]]
