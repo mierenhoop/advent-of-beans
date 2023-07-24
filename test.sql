@@ -4,11 +4,20 @@ INSERT INTO user(rowid, name, gh_id, gh_auth) VALUES
 (3, '3', '', ''),
 (4, '4', '', '');
 
-INSERT INTO user_puzzle(user_id, puzzle, bucket_id, silver_time, gold_time) VALUES
-(1, '01', 0, 10,20),
-(1, '02', 0, 30,40),
-(2, '01', 0, 15,NULL),
-(2, '02', 0, 35,NULL)
+INSERT INTO achievement(user_id, puzzle, time, type) VALUES
+(1, '01', 10, 'silver'),
+(2, '01', 15, 'silver'),
+(1, '01', 20, 'gold'),
+(1, '02', 30, 'silver'),
+(2, '02', 35, 'silver'),
+(1, '02', 40, 'gold')
+;
+
+INSERT INTO user_puzzle(user_id, puzzle, bucket_id) VALUES
+(1, '01', 0),
+(2, '01', 0),
+(1, '02', 0),
+(2, '02', 0)
 ;
 
 

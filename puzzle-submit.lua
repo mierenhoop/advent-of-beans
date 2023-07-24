@@ -16,12 +16,15 @@ FROM user
 WHERE rowid = ?
 ]], user_id)
 
-local bucket, puzzle_time = db.urow(fmt([[
-SELECT bucket_id, %s_time
-FROM user_puzzle 
-WHERE user_id = ?
-  AND puzzle = ?
-]], target), user_id, puzzle)
+local bucket, puzzle_time = db.urow([[
+SELECT
+(SELECT bucket_id
+FROM user_puzzle
+WHERE user_id = ? AND puzzle = ?),
+(SELECT time
+FROM achievement
+WHERE user_id = ? AND puzzle = ? AND type = ?)
+]], user_id, puzzle, user_id, puzzle, target)
 
 -- TODO: use this only once in this/answer.lua
 if next_try and GetTime() < next_try then
@@ -47,19 +50,11 @@ if answer == target_answer then
     SET fails = NULL
     WHERE rowid = ?
     ]], user_id)
-    local pos = db.urow(([[
-    UPDATE puzzle
-    SET STAR_size = STAR_size + 1
-    WHERE name = ?
-    RETURNING STAR_size
-    ]]):gsub("STAR",target), puzzle)
-    cookie.pos = pos
-    db.urow(fmt([[
-    UPDATE user_puzzle
-    SET %s_time = UNIXEPOCH()-(SELECT time_start FROM puzzle WHERE name = ?)
-    WHERE puzzle = ?
-    AND user_id = ?
-    ]], target), puzzle, puzzle, user_id)
+    cookie.bucketrow = db.urow([[
+    INSERT INTO achievement(user_id, puzzle, time, type) VALUES
+    (?, ?, UNIXEPOCH()-(SELECT time_start FROM puzzle WHERE name = ?), ?)
+    RETURNING rowid
+    ]], user_id, puzzle, puzzle, target)
   end)
 
   Log(kLogInfo, fmt("user %d got puzzle %s", user_id, puzzle))

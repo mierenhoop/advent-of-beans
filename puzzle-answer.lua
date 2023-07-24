@@ -23,11 +23,12 @@ SELECT fails, next_try FROM user
 WHERE rowid = ?
 ]], user_id)
 
-local answer_time = db.urow(fmt([[
-SELECT %s_time FROM user_puzzle
+local answer_time = db.urow([[
+SELECT time FROM achievement
 WHERE user_id = ?
 AND puzzle = ?
-]], cookie.target), user_id, puzzle)
+AND type = ?
+]], user_id, puzzle, cookie.target)
 
 html.page_begin()
 
@@ -40,12 +41,11 @@ elseif answer_time then
   <p>Your received the <strong>%s</strong> star.</p>
   <p>Finished puzzle in %.2f seconds.</p>
   ]], cookie.target, answer_time))
-  local place = db.urow(fmt([[
-  SELECT COUNT(silver_time)
-  FROM user_puzzle
-  WHERE puzzle = ?
-  AND %s_time <= ?
-  ]], cookie.target), puzzle, answer_time)
+  local place = db.urow([[
+  SELECT COUNT(time) FROM achievement
+  WHERE puzzle = ? AND type = ?
+  AND rowid <= ? --TODO:BETWEEN
+  ]], puzzle, cookie.target, assert(cookie.bucketrow))
   wrt(fmt([[
   <p>You placed %d</p>
   ]], place)) --TODO: use consistent view

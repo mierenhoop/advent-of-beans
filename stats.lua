@@ -2,8 +2,8 @@ html.page_begin()
 
 local norm = tonumber(db.urow[[
 SELECT MAX(silver_count)
-FROM (SELECT puzzle, COUNT(silver_time) silver_count
-  FROM user_puzzle
+FROM (SELECT puzzle, COUNT(nullif(type = 'silver', 0)) silver_count
+  FROM achievement
   GROUP BY puzzle);
 ]] or math.huge)
 if norm == 0 then norm = math.huge end
@@ -20,9 +20,9 @@ wrt[[
 </tr>
 ]]
 for puzzle, gold, silver in db.urows[[
-  SELECT puzzle, COUNT(gold_time), COUNT(silver_time)
-  FROM user_puzzle
-  INNER JOIN puzzle ON puzzle.name = user_puzzle.puzzle
+  SELECT puzzle, COUNT(nullif(type = 'gold', 0)), COUNT(nullif(type = 'silver', 0))
+  FROM achievement
+  INNER JOIN puzzle ON puzzle.name = achievement.puzzle
   WHERE time_start <= unixepoch()
   GROUP BY puzzle
   ORDER BY time_start

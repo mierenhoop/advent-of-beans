@@ -21,13 +21,16 @@ end
 
 db.get_user_bucket(user_id, puzzle) --TODO: preload this
 
-local silver_time, gold_time = db.urow([[
-SELECT silver_time, gold_time
-FROM user_puzzle
-WHERE
+local times = {}
+for atype, time in db.urows([[
+  SELECT type, time
+  FROM achievement
+  WHERE
   puzzle = ?
   AND user_id = ?
-]], puzzle, user_id)
+  ]], puzzle, user_id) do
+  times[atype] = time
+end
 
 local function html_input(atype)
   wrt(fmt([[
@@ -57,12 +60,12 @@ SELECT silver_answer, gold_answer
 FROM bucket WHERE rowid = ?
 ]], bucket)
 
-if silver_time then
+if times.silver then
   html_receive("silver", silver_answer)
 
   wrt(p2)
 
-  if not gold_time then
+  if not times.gold then
     html_input"gold"
     wrt(fmt([[
     <p>You can still <a href="/%s/input">get your input</a></p>

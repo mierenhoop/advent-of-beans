@@ -2,15 +2,15 @@ html.leaderboard_begin()
 
 local function dayleaderboard(star)
   wrt[[<ol>]]
-  for user_id, name, link, anon, time in db.urows(string.gsub([[
-    SELECT user_id, name, link, anonymous, STAR_time
-    FROM user_puzzle
-    INNER JOIN user ON user_puzzle.user_id = user.rowid
+  for user_id, name, link, anon, time in db.urows([[
+    SELECT user_id, name, link, anonymous, time
+    FROM achievement
+    INNER JOIN user ON achievement.user_id = user.rowid
     WHERE puzzle = ?
-      AND STAR_time IS NOT NULL
-    ORDER BY STAR_time ASC, user_id
+      AND type = ?
+    ORDER BY achievement.rowid
     LIMIT 100
-    ]], "STAR", star), puzzle) do
+    ]], puzzle, star) do
     wrt[[<li>]]
     wrt(fmt("%.2f ", time))
     html.user(user_id, anon~=0, name, link)

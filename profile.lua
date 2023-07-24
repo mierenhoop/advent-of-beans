@@ -10,8 +10,8 @@ if user_id then
   wrt"</strong></p>"
 
   local silver, gold = db.urow([[
-  SELECT COUNT(silver_time), COUNT(gold_time)
-  FROM user_puzzle
+  SELECT COUNT(nullif(type = 'silver',0)), COUNT(nullif(type = 'gold',0))
+  FROM achievement
   WHERE user_id = ?
   ]], user_id)
   wrt(fmt([[

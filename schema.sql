@@ -28,18 +28,13 @@ CREATE TABLE IF NOT EXISTS puzzle (
   time_start INTEGER NOT NULL, -- unix time
   part1      TEXT NOT NULL,
   part2      TEXT NOT NULL,
-  gen_code   TEXT NOT NULL,
-
-  silver_size INTEGER NOT NULL DEFAULT 0,
-  gold_size INTEGER NOT NULL DEFAULT 0
+  gen_code   TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS user_puzzle(
   user_id     INTEGER NOT NULL,
   puzzle      TEXT NOT NULL,
-  bucket_id   INTEGER NOT NULL,
-  silver_time INTEGER,
-  gold_time   INTEGER
+  bucket_id   INTEGER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS bucket(
@@ -58,9 +53,9 @@ CREATE VIEW IF NOT EXISTS all_silver AS
 SELECT user_id, SUM(silver_score) AS score
 FROM (
   SELECT user_id,
-  (100+1-row_number() OVER (PARTITION BY puzzle ORDER BY silver_time, user_id)) AS silver_score
-  FROM user_puzzle
-  WHERE silver_time IS NOT NULL
+  (100+1-row_number() OVER (PARTITION BY puzzle ORDER BY rowid)) AS silver_score
+  FROM achievement
+  WHERE type = 'silver'
 )
 INNER JOIN user ON user.rowid = user_id
 GROUP BY user_id;
@@ -69,9 +64,9 @@ CREATE VIEW IF NOT EXISTS all_gold AS
 SELECT user_id, SUM(gold_score) AS score
 FROM (
   SELECT user_id,
-  (100+1-row_number() OVER (PARTITION BY puzzle ORDER BY gold_time, user_id)) AS gold_score
-  FROM user_puzzle
-  WHERE gold_time IS NOT NULL
+  (100+1-row_number() OVER (PARTITION BY puzzle ORDER BY rowid)) AS gold_score
+  FROM achievement
+  WHERE type = 'gold'
 )
 INNER JOIN user ON user.rowid = user_id
 GROUP BY user_id;
