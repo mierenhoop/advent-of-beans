@@ -158,6 +158,7 @@ function html.leaderboard_begin()
   wrt"<p>Per day:"
   for name in db.urows"SELECT name FROM puzzle ORDER BY time_start" do
     local link = name
+    name = EscapeHtml(name)
     if name == puzzle then name = "<strong>"..name.."</strong>" end
     wrt(fmt([[ <a href="/%s/leaderboard">%s</a>]], link, name))
   end
