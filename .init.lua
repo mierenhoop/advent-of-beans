@@ -19,29 +19,59 @@ Github = {}
 wrt, fmt, esc = Write, string.format, EscapeHtml
 
 local _db
+
+function db.open()
+  --this might fail with Github.cache_avatar
+  --assert(not _db, "db: already open")
+  _db = assert(lsqlite3.open(DB_FILE), "db: could not open")
+  _db:busy_timeout(1000)
+  pcall(db.exec, [[
+  PRAGMA journal_mode=wal;
+  PRAGMA synchronous=normal;
+  ]])
+  return setmetatable({}, {
+    __close = function()
+      db.close()
+    end
+  })
+end
+
+function db.close()
+  _db:close()
+  _db = nil
+end
+
+local function dbok(ret)
+  if ret ~= lsqlite3.OK then
+    error(_db:errmsg())
+  end
+end
+
 local function prep(sql, ...)
   local stmt = _db:prepare(sql)
   if not stmt then error(_db:errmsg()) end
-  assert(stmt:bind_values(...) == lsqlite3.OK)
+  dbok(stmt:bind_values(...))
   return stmt
 end
 
+
 function db.exec(sql)
-  local ret = _db:exec(sql)
-  if ret ~= lsqlite3.OK then error(_db:errmsg()) end
+  dbok(_db:exec(sql))
 end
 
 function db.urow(sql, ...)
   local stmt = prep(sql, ...)
   local rows = table.pack(stmt:urows()(stmt))
-  stmt:finalize()
+  dbok(stmt:finalize())
   return table.unpack(rows)
 end
 
 function db.urows(sql, ...)
   local stmt = prep(sql, ...)
   local closer = setmetatable({}, {
-    __close = function() stmt:finalize() end
+    __close = function()
+      dbok(stmt:finalize())
+    end
   })
   return stmt:urows(), stmt, nil, closer
 end
@@ -114,14 +144,6 @@ function db.get_user_bucket(user_id, puzzle)
   return bucket
 end
 
-function db.open()
-  _db = lsqlite3.open(DB_FILE)
-  _db:busy_timeout(1000)
-  db.exec[[
-  PRAGMA journal_mode=wal;
-  PRAGMA synchronous=normal;
-  ]]
-end
 
 
 
@@ -207,11 +229,11 @@ function Github.cache_avatar(user_info)
     assert(stat == 200)
     print(EncodeLua(headers))
     local ct = assert(headers["Content-Type"])
-    db.open()
+    -- TODO: put these in different database?
+    local dbscope <close> = db.open()
     db.urow([[
     REPLACE INTO avatar_cache(user_id, body, content_type) VALUES (?, ?, ?)
     ]], assert(db.get_session_user_id()), EncodeBase64(body), ct)
-    _db:close()
     unix.exit(0)
   end
 end
@@ -228,7 +250,7 @@ local function main()
 
     local schema = assert(Slurp"schema.sql")
 
-    db.open()
+    local dbscope <close> = db.open()
     db.exec(schema)
 
     db.exec(assert(Slurp"test.sql"))
@@ -248,7 +270,7 @@ local function main()
 
     local puzzle = path.basename(p)
 
-    db.open()
+    local dbscope <close> = db.open()
 
     local start, p1, p2, gen = db.urow([[
     SELECT time_start, part1, part2, gen_code
@@ -280,7 +302,7 @@ local function main()
 
     local puzzle = path.basename(p)
 
-    db.open()
+    local dbscope <close> = db.open()
 
     local function get(filename)
       return assert(Slurp(path.join(p, filename)))
@@ -345,7 +367,7 @@ function OnHttpRequest()
 
   local uid = p:match"^/avatar%-(%d+)"
   if uid then
-    db.open()
+    local dbscope <close> = db.open()
     local body, ct = db.urow([[
     SELECT body, content_type
     FROM avatar_cache
@@ -368,17 +390,14 @@ function OnHttpRequest()
 
   --print("Access", "/"..cmd..".lua")
 
+  local dbscope <close> = db.open()
   return Route(GetHost(), "/"..cmd..".lua")
-end
-
-function OnWorkerStart()
-  db.open()
 end
 
 function OnServerHeartbeat()
   --TODO: probably horribly inefficient
   --TODO: fork here? permissions?
-  db.open()
+  local dbscope <close> = db.open()
 
   db.exec[[
   BEGIN TRANSACTION;
@@ -395,7 +414,6 @@ function OnServerHeartbeat()
 
   COMMIT;
   ]]
-  _db:close()
 end
 
 ProgramHeartbeatInterval(LEADERBOARD_INTERVAL * 1000) -- 10s
