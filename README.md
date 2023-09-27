@@ -4,18 +4,19 @@ Advent of code clone built with [Redbean](https://redbean.dev/).
 
 ## Status
 
-*I will pause development on this project because it is currently in a working state. I did not plan to create actual puzzles and host an event, therefore adding new features might be a waste of time. If anyone is interested in using this project for hosting their event, create a github issue or contact me so I can help you get it set up.*
+*I do not plan to create actual puzzles and host an event. If you are interested in using this project for hosting an event and need help, create a Github issue or contact me.*
 
 As of the time of writing it has the following features:
 * Page listing all the puzzles
-* Puzzle can have starting time
-* Puzzle inputs are stored in buckets, some users will share a bucket
+* Puzzles have a starting time
+* Puzzle inputs and answers are stored in buckets, some users will share a bucket
 * Wrong answer submit timeout
 * Leaderboard for everything & individual puzzles
+* Statistics
 * Silver and gold stars
 * User profile page
 * Github integration
-* Cached remote resources to enable use in private networks
+* Cached remote resources to support private networks
 * All-in-one binary with control of the database via the command line
 * No javascript
 
