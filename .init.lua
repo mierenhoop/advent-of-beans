@@ -18,13 +18,15 @@ html = {}
 Github = {}
 wrt, fmt, esc = Write, string.format, EscapeHtml
 
-local _db
-
 function db.open()
-  --this might fail with Github.cache_avatar
-  --assert(not _db, "db: already open")
-  _db = assert(lsqlite3.open(DB_FILE), "db: could not open")
-  _db:busy_timeout(1000)
+  local pid = unix.getpid()
+  assert(db.curpid ~= pid, "db: already open in current process")
+
+  db._db = assert(lsqlite3.open(DB_FILE), "db: could not open")
+  db.curpid = pid
+  Log(kLogInfo, "db: open, pid: " .. pid)
+
+  db._db:busy_timeout(1000)
   pcall(db.exec, [[
   PRAGMA journal_mode=wal;
   PRAGMA synchronous=normal;
@@ -37,26 +39,28 @@ function db.open()
 end
 
 function db.close()
-  _db:close()
-  _db = nil
+  Log(kLogInfo, "db: closed, pid: " .. db.curpid)
+  db._db:close()
+  db._db = nil
+  db.curpid = nil
 end
 
 local function dbok(ret)
   if ret ~= lsqlite3.OK then
-    error(_db:errmsg())
+    error(db._db:errmsg())
   end
 end
 
 local function prep(sql, ...)
-  local stmt = _db:prepare(sql)
-  if not stmt then error(_db:errmsg()) end
+  local stmt = db._db:prepare(sql)
+  if not stmt then error(db._db:errmsg()) end
   dbok(stmt:bind_values(...))
   return stmt
 end
 
 
 function db.exec(sql)
-  dbok(_db:exec(sql))
+  dbok(db._db:exec(sql))
 end
 
 function db.urow(sql, ...)
@@ -155,6 +159,7 @@ function html.page_begin(title)
   wrt[[<nav>]]
   wrt[[<a href="/">Advent</a> | ]]
   wrt[[<a href="/about">About</a> | ]]
+  wrt[[<a href="/events">Events</a> | ]]
   wrt[[<a href="/leaderboard">Leaderboard</a> | ]]
   wrt[[<a href="/stats">Stats</a> | ]]
   local user_id = db.get_session_user_id()
