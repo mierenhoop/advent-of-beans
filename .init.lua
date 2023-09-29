@@ -162,10 +162,9 @@ function html.page_begin(title)
   wrt[[<a href="/events">Events</a> | ]]
   wrt[[<a href="/leaderboard">Leaderboard</a> | ]]
   wrt[[<a href="/stats">Stats</a> | ]]
-  local user_id = db.get_session_user_id()
   local name
-  if user_id then
-    name = db.urow("SELECT name FROM user WHERE rowid = ?", user_id)
+  if db.user_id then
+    name = db.urow("SELECT name FROM user WHERE rowid = ?", db.user_id)
   end
   wrt(fmt([[<a href="/profile">%s</a>]], name and EscapeHtml(name) or "Login"))
 
@@ -238,7 +237,7 @@ function Github.cache_avatar(user_info)
     local dbscope <close> = db.open()
     db.urow([[
     REPLACE INTO avatar_cache(user_id, body, content_type) VALUES (?, ?, ?)
-    ]], assert(db.get_session_user_id()), EncodeBase64(body), ct)
+    ]], assert(db.user_id), EncodeBase64(body), ct)
     unix.exit(0)
   end
 end
@@ -396,6 +395,8 @@ function OnHttpRequest()
   --print("Access", "/"..cmd..".lua")
 
   local dbscope <close> = db.open()
+  db.user_id = db.get_session_user_id()
+
   return Route(GetHost(), "/"..cmd..".lua")
 end
 

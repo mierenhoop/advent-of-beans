@@ -1,6 +1,4 @@
-local user_id = db.get_session_user_id()
-
-if not user_id then
+if not db.user_id then
   Log(kLogWarn, "no cookie")
   return ServeRedirect(303, "/profile")
 end
@@ -21,14 +19,14 @@ end
 local fails, next_try = db.urow([[
 SELECT fails, next_try FROM user
 WHERE rowid = ?
-]], user_id)
+]], db.user_id)
 
 local answer_time = db.urow([[
 SELECT time FROM achievement
 WHERE user_id = ?
 AND puzzle = ?
 AND type = ?
-]], user_id, puzzle, cookie.target)
+]], db.user_id, puzzle, cookie.target)
 
 html.page_begin()
 

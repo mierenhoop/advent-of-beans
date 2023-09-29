@@ -11,15 +11,13 @@ wrt("<h1>"..esc(puzzle).."</h1>")
 
 wrt(p1)
 
-local user_id = db.get_session_user_id()
-
-if not user_id then
+if not db.user_id then
   wrt[[<p><strong>Log in to play</strong></p>]]
   html.page_end()
   return
 end
 
-db.get_user_bucket(user_id, puzzle) --TODO: preload this
+db.get_user_bucket(db.user_id, puzzle) --TODO: preload this
 
 local times = {}
 for atype, time in db.urows([[
@@ -28,7 +26,7 @@ for atype, time in db.urows([[
   WHERE
   puzzle = ?
   AND user_id = ?
-  ]], puzzle, user_id) do
+  ]], puzzle, db.user_id) do
   times[atype] = time
 end
 
@@ -54,7 +52,7 @@ local function html_receive(atype, answer)
 
 end
 
-local bucket = db.get_user_bucket(user_id, puzzle)
+local bucket = db.get_user_bucket(db.user_id, puzzle)
 local silver_answer, gold_answer = db.urow([[
 SELECT silver_answer, gold_answer
 FROM bucket WHERE rowid = ?

@@ -7,14 +7,13 @@ if not answer
   return ServeError(400)
 end
 
-local user_id = db.get_session_user_id()
-if not user_id then return ServeError(400) end -- TODO: or not authorized?
+if not db.user_id then return ServeError(400) end -- TODO: or not authorized?
 
 local fails, next_try = db.urow([[
 SELECT fails, next_try
 FROM user
 WHERE rowid = ?
-]], user_id)
+]], db.user_id)
 
 local bucket, puzzle_time = db.urow([[
 SELECT
@@ -24,7 +23,7 @@ WHERE user_id = ? AND puzzle = ?),
 (SELECT time
 FROM achievement
 WHERE user_id = ? AND puzzle = ? AND type = ?)
-]], user_id, puzzle, user_id, puzzle, target)
+]], db.user_id, puzzle, db.user_id, puzzle, target)
 
 -- TODO: use this only once in this/answer.lua
 if next_try and GetTime() < next_try then
@@ -49,15 +48,15 @@ if answer == target_answer then
     UPDATE user
     SET fails = NULL
     WHERE rowid = ?
-    ]], user_id)
+    ]], db.user_id)
     cookie.bucketrow = db.urow([[
     INSERT INTO achievement(user_id, puzzle, time, type) VALUES
     (?, ?, UNIXEPOCH()-(SELECT time_start FROM puzzle WHERE name = ?), ?)
     RETURNING rowid
-    ]], user_id, puzzle, puzzle, target)
+    ]], db.user_id, puzzle, puzzle, target)
   end)
 
-  Log(kLogInfo, fmt("user %d got puzzle %s", user_id, puzzle))
+  Log(kLogInfo, fmt("user %d got puzzle %s", db.user_id, puzzle))
 else
   fails = (fails or 0)+ 1
   -- 1 > 10s
@@ -76,8 +75,8 @@ else
   SET fails = ?,
   next_try = UNIXEPOCH()+?
   WHERE rowid = ?
-  ]], fails, waiting_time, user_id)
-  Log(kLogInfo, fmt("user %d failed puzzle %d", user_id, puzzle))
+  ]], fails, waiting_time, db.user_id)
+  Log(kLogInfo, fmt("user %d failed puzzle %d", db.user_id, puzzle))
 end
 
 SetCookie(COOKIE_ANSWER, EncodeBase64(EncodeJson(cookie))) -- TODO: expire 10s

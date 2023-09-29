@@ -1,7 +1,6 @@
-local user_id = db.get_session_user_id()
-if not user_id then return ServeError(400) end
+if not db.user_id then return ServeError(400) end
 
-local bucket = db.get_user_bucket(user_id, puzzle)
+local bucket = db.get_user_bucket(db.user_id, puzzle)
 
 local time_start = db.urow([[
 SELECT time_start

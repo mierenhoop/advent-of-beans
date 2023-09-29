@@ -1,19 +1,18 @@
 html.page_begin()
 
-local user_id = db.get_session_user_id()
-if user_id then
-  local name, link, anon = db.urow("SELECT name, link, anonymous FROM user WHERE rowid = ?", user_id)
+if db.user_id then
+  local name, link, anon = db.urow("SELECT name, link, anonymous FROM user WHERE rowid = ?", db.user_id)
   anon = anon ~= 0
 
   wrt"<p>Logged in as: <strong>"
-  html.user(user_id, anon, name, link)
+  html.user(db.user_id, anon, name, link)
   wrt"</strong></p>"
 
   local silver, gold = db.urow([[
   SELECT COUNT(nullif(type = 'silver',0)), COUNT(nullif(type = 'gold',0))
   FROM achievement
   WHERE user_id = ?
-  ]], user_id)
+  ]], db.user_id)
   wrt(fmt([[
   <p>You have in total <strong>%d <em>silver</em></strong>
   and <strong>%d <em>gold</em></strong> stars.</p>
