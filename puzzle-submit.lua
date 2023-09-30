@@ -9,6 +9,8 @@ end
 
 if not db.user_id then return ServeError(400) end -- TODO: or not authorized?
 
+if db.write_limiter() then return end
+
 local fails, next_try = db.urow([[
 SELECT fails, next_try
 FROM user

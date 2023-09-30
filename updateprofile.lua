@@ -1,5 +1,3 @@
---TODO: rate limit this...
-
 local link = GetParam"link"
 local anon = GetParam"anonymous"
 
@@ -11,6 +9,8 @@ if not db.user_id then
   Log(kLogWarn, "no cookie")
   return ServeRedirect(303, "/profile")
 end
+
+if db.write_limiter() then return end
 
 if not anon then
   local gh_auth = db.urow("SELECT gh_auth FROM user WHERE rowid = ?", db.user_id)

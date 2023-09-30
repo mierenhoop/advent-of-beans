@@ -1,6 +1,8 @@
 html.page_begin()
 
 if db.user_id then
+  if db.write_limiter() then return end
+
   local name, link, anon = db.urow("SELECT name, link, anonymous FROM user WHERE rowid = ?", db.user_id)
   anon = anon ~= 0
 

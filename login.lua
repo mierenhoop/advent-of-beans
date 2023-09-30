@@ -18,6 +18,7 @@ local opts = {
 
 local gh_at_link = "https://github.com/login/oauth/access_token"
 
+-- TODO: protect this expensive call from malicious DOS'ers
 local stat, _, body = assert(Fetch(gh_at_link, opts))
 assert(stat == 200)
 

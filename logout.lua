@@ -1,4 +1,6 @@
 if db.user_id then
+  if db.write_limiter() then return end
+
   db.urow("DELETE FROM session WHERE user_id = ?", db.user_id)
 end
 

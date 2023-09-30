@@ -13,6 +13,8 @@ COOKIE_ANSWER="advent_answer"
 LEADERBOARD_INTERVAL = 3
 BUCKET_AMOUNT=1000
 
+MAX_WRITES=10
+
 db = {}
 html = {}
 Github = {}
@@ -148,8 +150,22 @@ function db.get_user_bucket(user_id, puzzle)
   return bucket
 end
 
-
-
+function db.write_limiter()
+  db.urow([[
+  INSERT OR IGNORE INTO write_limiter(user_id) VALUES (?);
+  ]], db.user_id)
+  local writes = db.urow([[
+  SELECT writes FROM write_limiter WHERE user_id = ?
+  ]], db.user_id)
+  if writes > MAX_WRITES then
+    ServeError(429)
+    SetHeader('Connection', 'close')
+    return true
+  end
+  db.urow([[
+  UPDATE write_limiter SET writes = writes + 1 WHERE user_id = ?
+  ]], db.user_id)
+end
 
 function html.page_begin(title)
   wrt[[<!DOCTYPE html>]]
@@ -407,6 +423,9 @@ function OnServerHeartbeat()
 
   db.exec[[
   BEGIN TRANSACTION;
+
+  --TODO: don't use same interval as leaderboard update
+  UPDATE write_limiter SET writes = 0;
 
   DELETE FROM leaderboard;
 

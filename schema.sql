@@ -76,3 +76,8 @@ CREATE TABLE IF NOT EXISTS avatar_cache (
   body         TEXT NOT NULL,
   content_type TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS write_limiter (
+  user_id INTEGER NOT NULL UNIQUE,
+  writes  INTEGER DEFAULT 0
+);
