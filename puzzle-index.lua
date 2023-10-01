@@ -44,11 +44,11 @@ end
 
 local function html_receive(atype, answer)
   wrt(fmt([[
-  <strong>Received <em>%s</em> star</strong>
+  <strong>Received <em class="stat-%s">%s</em> star</strong>
   <form>
   <input disabled value="%s" />
   </form>
-  ]], atype, answer))
+  ]], atype, atype, answer))
 
 end
 

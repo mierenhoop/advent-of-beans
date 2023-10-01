@@ -23,3 +23,6 @@ As of the time of writing it has the following features:
 Todo list:
 * Rate limiting/DDOS protection
 * Support multiple events
+* Better styling
+* Stress testing
+* Generally refactor aiming for simplicity

@@ -36,9 +36,9 @@ if next_try and GetTime() < next_try then
 elseif answer_time then
   -- TODO: floating point rounding errors?? else just store time as integer
   wrt(fmt([[
-  <p>Your received the <strong>%s</strong> star.</p>
+  <p>Your received the <strong class="stat-%s">%s</strong> star.</p>
   <p>Finished puzzle in %.2f seconds.</p>
-  ]], cookie.target, answer_time))
+  ]], cookie.target, cookie.target, answer_time))
   local place = db.urow([[
   SELECT COUNT(time) FROM achievement
   WHERE puzzle = ? AND type = ?
