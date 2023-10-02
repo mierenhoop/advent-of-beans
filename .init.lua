@@ -20,6 +20,13 @@ html = {}
 Github = {}
 wrt, fmt, esc = Write, string.format, EscapeHtml
 
+local ps,pn = 0, 0
+function time(what)
+  local s, n = unix.clock_gettime()
+  print(fmt("Time: %02d %09d\t%s", s-ps, n-pn, what))
+  ps,pn=s,n
+end
+
 function db.open()
   local pid = unix.getpid()
   assert(db.curpid ~= pid, "db: already open in current process")
@@ -29,6 +36,7 @@ function db.open()
   Log(kLogInfo, "db: open, pid: " .. pid)
 
   db._db:busy_timeout(1000)
+  -- TODO: these PRAGMA's are relatively expensive
   pcall(db.exec, [[
   PRAGMA journal_mode=wal;
   PRAGMA synchronous=normal;
@@ -380,6 +388,17 @@ if not ok then
   unix.exit(1)
 end
 
+local routes = {}
+
+for _, v in ipairs {
+  "about", "events", "index", "leaderboard", "login", "logout", "profile",
+  "puzzle-answer", "puzzle-index", "puzzle-input", "puzzle-leaderboard",
+  "puzzle-submit", "stats", "updateprofile"
+} do
+  routes[v] = assert(loadfile(v..".lua"))
+end
+
+
 function OnHttpRequest()
   local p = GetPath()
 
@@ -413,7 +432,8 @@ function OnHttpRequest()
   local dbscope <close> = db.open()
   db.user_id = db.get_session_user_id()
 
-  return Route(GetHost(), "/"..cmd..".lua")
+  routes[cmd]()
+  --return Route(GetHost(), "/"..cmd..".lua")
 end
 
 function OnServerHeartbeat()
