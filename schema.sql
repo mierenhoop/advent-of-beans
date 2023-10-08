@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS session (
 
 CREATE TABLE IF NOT EXISTS achievement (
   user_id   INTEGER NOT NULL,
-  puzzle    TEXT NOT NULL,
+  puzzle_id INTEGER NOT NULL,
   time      INTEGER NOT NULL, -- unix time
   type      TEXT NOT NULL
 );
@@ -33,12 +33,12 @@ CREATE TABLE IF NOT EXISTS puzzle (
 
 CREATE TABLE IF NOT EXISTS user_puzzle(
   user_id     INTEGER NOT NULL,
-  puzzle      TEXT NOT NULL,
+  puzzle_id   INTEGER NOT NULL,
   bucket_id   INTEGER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS bucket(
-  puzzle        TEXT NOT NULL,
+  puzzle_id     integer NOT NULL,
   input         TEXT NOT NULL,
   silver_answer BLOB NOT NULL,
   gold_answer   BLOB NOT NULL
@@ -53,7 +53,7 @@ CREATE VIEW IF NOT EXISTS all_silver AS
 SELECT user_id, SUM(silver_score) AS score
 FROM (
   SELECT user_id,
-  (100+1-row_number() OVER (PARTITION BY puzzle ORDER BY time, rowid)) AS silver_score
+  (100+1-row_number() OVER (PARTITION BY puzzle_id ORDER BY time, rowid)) AS silver_score
   FROM achievement
   WHERE type = 'silver'
 )
@@ -64,7 +64,7 @@ CREATE VIEW IF NOT EXISTS all_gold AS
 SELECT user_id, SUM(gold_score) AS score
 FROM (
   SELECT user_id,
-  (100+1-row_number() OVER (PARTITION BY puzzle ORDER BY time, rowid)) AS gold_score
+  (100+1-row_number() OVER (PARTITION BY puzzle_id ORDER BY time, rowid)) AS gold_score
   FROM achievement
   WHERE type = 'gold'
 )

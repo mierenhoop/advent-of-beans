@@ -15,6 +15,9 @@ AOB_SOURCES=.init.lua about.lua events.lua index.lua leaderboard.lua \
 
 all: dev
 
+test:
+	$(DEV_RUN_CMD) -s server
+
 dev: $(DB_FILE)
 	$(DEV_RUN_CMD) server
 

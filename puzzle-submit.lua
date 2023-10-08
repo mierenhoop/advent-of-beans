@@ -2,8 +2,7 @@ local answer = tonumber(GetParam"answer")
 local target = GetParam"type"
 
 if not answer
-  or (target ~= "silver" and target ~= "gold")
-  or not puzzle then
+  or (target ~= "silver" and target ~= "gold") then
   return ServeError(400)
 end
 
@@ -21,15 +20,15 @@ local bucket, puzzle_time = db.urow([[
 SELECT
 (SELECT bucket_id
 FROM user_puzzle
-WHERE user_id = ? AND puzzle = ?),
+WHERE user_id = ? AND puzzle_id = ?),
 (SELECT time
 FROM achievement
-WHERE user_id = ? AND puzzle = ? AND type = ?)
-]], db.user_id, puzzle, db.user_id, puzzle, target)
+WHERE user_id = ? AND puzzle_id = ? AND type = ?)
+]], db.user_id, puzzle_id, db.user_id, puzzle_id, target)
 
 -- TODO: use this only once in this/answer.lua
 if next_try and GetTime() < next_try then
-  return ServeRedirect(303, fmt("/%s/answer",puzzle))
+  return ServeRedirect(303, fmt("/%s/answer",puzzle_name))
 end
 
 if puzzle_time then return ServeError(400) end -- already correct answer
@@ -52,13 +51,13 @@ if answer == target_answer then
     WHERE rowid = ?
     ]], db.user_id)
     cookie.bucketrow = db.urow([[
-    INSERT INTO achievement(user_id, puzzle, time, type) VALUES
-    (?, ?, UNIXEPOCH()-(SELECT time_start FROM puzzle WHERE name = ?), ?)
+    INSERT INTO achievement(user_id, puzzle_id, time, type) VALUES
+    (?, ?, UNIXEPOCH()-(SELECT time_start FROM puzzle WHERE rowid = ?), ?)
     RETURNING rowid
-    ]], db.user_id, puzzle, puzzle, target)
+    ]], db.user_id, puzzle_id, puzzle_id, target)
   end)
 
-  Log(kLogInfo, fmt("user %d got puzzle %s", db.user_id, puzzle))
+  Log(kLogInfo, fmt("user %d got puzzle %s", db.user_id, puzzle_name))
 else
   fails = (fails or 0)+ 1
   -- 1 > 10s
@@ -78,9 +77,9 @@ else
   next_try = UNIXEPOCH()+?
   WHERE rowid = ?
   ]], fails, waiting_time, db.user_id)
-  Log(kLogInfo, fmt("user %d failed puzzle %d", db.user_id, puzzle))
+  Log(kLogInfo, fmt("user %d failed puzzle %d", db.user_id, puzzle_name))
 end
 
 SetCookie(COOKIE_ANSWER, EncodeBase64(EncodeJson(cookie))) -- TODO: expire 10s
 
-SetHeader("Location", fmt("/%s/answer",puzzle))
+SetHeader("Location", fmt("/%s/answer",puzzle_name))

@@ -3,8 +3,6 @@ if not db.user_id then
   return ServeRedirect(303, "/profile")
 end
 
-if not puzzle then return ServeError(400) end
-
 local cookie = DecodeJson(DecodeBase64(GetCookie(COOKIE_ANSWER)))
 if not cookie then
   Log(kLogWarning, "user visited answer with expired cookie")
@@ -24,9 +22,9 @@ WHERE rowid = ?
 local answer_time = db.urow([[
 SELECT time FROM achievement
 WHERE user_id = ?
-AND puzzle = ?
+AND puzzle_id = ?
 AND type = ?
-]], db.user_id, puzzle, cookie.target)
+]], db.user_id, puzzle_id, cookie.target)
 
 html.page_begin()
 
@@ -41,9 +39,9 @@ elseif answer_time then
   ]], cookie.target, cookie.target, answer_time))
   local place = db.urow([[
   SELECT COUNT(time) FROM achievement
-  WHERE puzzle = ? AND type = ?
+  WHERE puzzle_id = ? AND type = ?
   AND rowid <= ? --TODO:BETWEEN
-  ]], puzzle, cookie.target, assert(cookie.bucketrow))
+  ]], puzzle_id, cookie.target, assert(cookie.bucketrow))
   wrt(fmt([[
   <p>You placed %d</p>
   ]], place)) --TODO: use consistent view
@@ -51,6 +49,6 @@ else
   return ServeError(400)
 end
 
-wrt(fmt([[<p>Go back to <a href="/%s">the puzzle</a></p>]], puzzle))
+wrt(fmt([[<p>Go back to <a href="/%s">the puzzle</a></p>]], puzzle_name))
 
 html.page_end()

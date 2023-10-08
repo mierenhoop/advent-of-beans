@@ -6,11 +6,11 @@ local function dayleaderboard(star)
     SELECT user_id, name, link, anonymous, time
     FROM achievement
     INNER JOIN user ON achievement.user_id = user.rowid
-    WHERE puzzle = ?
+    WHERE puzzle_id = ?
       AND type = ?
     ORDER BY achievement.time, achievement.rowid
     LIMIT 100
-    ]], puzzle, star) do
+    ]], puzzle_id, star) do
     wrt[[<li>]]
     wrt(fmt("%.2f ", time))
     html.user(user_id, anon~=0, name, link)

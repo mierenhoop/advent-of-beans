@@ -35,8 +35,8 @@ if not user_id then
   VALUES (?, ?, ?, ?)
   RETURNING rowid]],
   assert(user_json.login), assert(user_json.html_url), gh_id, token)
-  for puzzle in db.urows"SELECT name FROM puzzle" do
-    db.get_user_bucket(user_id, puzzle) -- add bucket to user
+  for puzzle_id in db.urows"SELECT rowid FROM puzzle" do
+    db.get_user_bucket(user_id, puzzle_id) -- add bucket to user
   end
 end
 

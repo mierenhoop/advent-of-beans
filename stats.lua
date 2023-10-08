@@ -2,9 +2,9 @@ html.page_begin()
 
 local norm = tonumber(db.urow[[
 SELECT MAX(silver_count)
-FROM (SELECT puzzle, COUNT(nullif(type = 'silver', 0)) silver_count
+FROM (SELECT puzzle_id, COUNT(nullif(type = 'silver', 0)) silver_count
   FROM achievement
-  GROUP BY puzzle);
+  GROUP BY puzzle_id);
 ]] or math.huge)
 if norm == 0 then norm = math.huge end
 
@@ -19,14 +19,16 @@ wrt[[
 <th>Distribution</th>
 </tr>
 ]]
-for puzzle, gold, silver in db.urows[[
-  SELECT puzzle, COUNT(nullif(type = 'gold', 0)), COUNT(nullif(type = 'silver', 0))
+for puzzle_id, gold, silver in db.urows[[
+  SELECT puzzle_id, COUNT(nullif(type = 'gold', 0)), COUNT(nullif(type = 'silver', 0))
   FROM achievement
-  INNER JOIN puzzle ON puzzle.name = achievement.puzzle
+  INNER JOIN puzzle ON puzzle.rowid = achievement.puzzle_id
   WHERE time_start <= unixepoch()
-  GROUP BY puzzle
+  GROUP BY puzzle_id
   ORDER BY time_start
   ]] do
+
+  local puzzle_name = db.urow("SELECT name FROM puzzle WHERE rowid = ?", puzzle_id)
 
   local total = math.ceil(silver / norm * maxstars)
   local ngold = math.ceil(gold / norm * maxstars)
@@ -43,7 +45,7 @@ for puzzle, gold, silver in db.urows[[
   <td>%d</td>
   <td><code>%s</code></td>
   </a>
-  ]], puzzle, puzzle, gold, silver, stars))
+  ]], puzzle_name, puzzle_name, gold, silver, stars))
 end
 wrt"</table>"
 

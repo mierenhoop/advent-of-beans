@@ -111,10 +111,10 @@ function db.get_session_user_id() -- simply cached
   return curuser
 end
 
-local function fill_bucket(puzzle, amount)
+local function fill_bucket(puzzle_id, amount)
   local code = db.urow([[
-  SELECT gen_code FROM puzzle WHERE name = ?
-  ]], puzzle)
+  SELECT gen_code FROM puzzle WHERE rowid = ?
+  ]], puzzle_id)
   local f = assert(load(code))
 
   local entropy = os.time()
@@ -125,19 +125,19 @@ local function fill_bucket(puzzle, amount)
       local input, silver, gold = f()
       assert(input and silver)
       db.urow([[
-      INSERT INTO bucket(puzzle, input, silver_answer, gold_answer) VALUES (?, ?, ?, ?)
-      ]], puzzle, input, silver, gold)
+      INSERT INTO bucket(puzzle_id, input, silver_answer, gold_answer) VALUES (?, ?, ?, ?)
+      ]], puzzle_id, input, silver, gold)
     end
   end)
 end
 
-function db.get_user_bucket(user_id, puzzle)
+function db.get_user_bucket(user_id, puzzle_id)
   local bucket = db.urow([[
   SELECT bucket_id
   FROM user_puzzle
-  WHERE puzzle = ?
+  WHERE puzzle_id = ?
   AND user_id = ?
-  ]], puzzle, user_id)
+  ]], puzzle_id, user_id)
 
   if not bucket then
     --TODO: instead of random bucket, maybe ring loop index over bucket
@@ -145,15 +145,15 @@ function db.get_user_bucket(user_id, puzzle)
     bucket = db.urow([[
     SELECT rowid
     FROM bucket
-    WHERE puzzle = ?
+    WHERE puzzle_id = ?
     ORDER BY RANDOM()
     LIMIT 1;
-    ]], puzzle)
+    ]], puzzle_id)
     assert(bucket)
     db.urow([[
-    INSERT INTO user_puzzle(user_id, puzzle, bucket_id)
+    INSERT INTO user_puzzle(user_id, puzzle_id, bucket_id)
     VALUES (?, ?, ?)
-    ]], user_id, puzzle, bucket)
+    ]], user_id, puzzle_id, bucket)
   end
   return bucket
 end
@@ -209,7 +209,7 @@ function html.leaderboard_begin()
   for name in db.urows"SELECT name FROM puzzle ORDER BY time_start" do
     local link = name
     name = EscapeHtml(name)
-    if name == puzzle then name = "<strong>"..name.."</strong>" end
+    if name == puzzle_name then name = "<strong>"..name.."</strong>" end
     wrt(fmt([[ <a href="/%s/leaderboard">%s</a>]], link, name))
   end
   wrt"</p>"
@@ -283,14 +283,14 @@ local function main()
 
     db.exec(assert(Slurp"test.sql"))
 
-    for puzzle in db.urows"SELECT name FROM puzzle" do
-      fill_bucket(puzzle, BUCKET_AMOUNT)
+    for puzzle_id in db.urows"SELECT rowid FROM puzzle" do
+      fill_bucket(puzzle_id, BUCKET_AMOUNT)
     end
 
     print("Database initialized at '" .. DB_FILE .. "'")
 
     unix.exit(0)
-  elseif cmd:match"^gen" then
+  --[=[elseif cmd:match"^gen" then
     local p = arg[2]
     if not p then
       error"no puzzle path provided"
@@ -359,7 +359,7 @@ local function main()
 
     print("Committed puzzle '" .. puzzle .. "'")
 
-    unix.exit(0)
+    unix.exit(0)]=]
   elseif not cmd:match"^serve" then
     error("invalid command '" .. cmd .. "'")
   end
@@ -421,16 +421,21 @@ function OnHttpRequest()
 
   local cmd
 
-  puzzle, cmd = p:match"^/(%d%d?)/?(%l*)$"
+  puzzle_name, cmd = p:match"^/(%d%d?)/?(%l*)$"
   if not cmd then cmd = p:match"^/(%l*)$" end
   if not cmd then return ServeError(404) end
   if cmd == "" then cmd = "index" end
-  if puzzle then cmd = "puzzle-" .. cmd end
+  if puzzle_name then cmd = "puzzle-" .. cmd end
 
   --print("Access", "/"..cmd..".lua")
 
   local dbscope <close> = db.open()
   db.user_id = db.get_session_user_id()
+
+  if puzzle_name then
+    -- global TODO: don't do this
+    puzzle_id = db.urow("SELECT rowid FROM puzzle WHERE name = ?", puzzle_name)
+  end
 
   routes[cmd]()
   --return Route(GetHost(), "/"..cmd..".lua")
