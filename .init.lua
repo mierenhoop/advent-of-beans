@@ -438,7 +438,9 @@ function OnHttpRequest()
   end
 
   routes[cmd]()
-  --return Route(GetHost(), "/"..cmd..".lua")
+  local url = GetHost(), "/"..cmd..".lua"
+  if puzzle_name then url = url.."?puzzle="..EscapeParam(puzzle_name) end
+  --return Route(url)
 end
 
 function OnServerHeartbeat()
