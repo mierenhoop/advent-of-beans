@@ -16,6 +16,11 @@ CREATE TABLE IF NOT EXISTS session (
   token   TEXT NOT NULL UNIQUE
 );
 
+CREATE TABLE IF NOT EXISTS event (
+  name    TEXT NOT NULL UNIQUE,
+  time    INTEGER NOT NULL -- unix time
+);
+
 CREATE TABLE IF NOT EXISTS achievement (
   user_id   INTEGER NOT NULL,
   puzzle_id INTEGER NOT NULL,
@@ -25,6 +30,7 @@ CREATE TABLE IF NOT EXISTS achievement (
 
 CREATE TABLE IF NOT EXISTS puzzle (
   name       TEXT NOT NULL UNIQUE,
+  event_id   INTEGER NOT NULL,
   time_start INTEGER NOT NULL, -- unix time
   part1      TEXT NOT NULL,
   part2      TEXT NOT NULL,
