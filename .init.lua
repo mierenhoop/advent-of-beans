@@ -234,6 +234,16 @@ function html.user(user_id, anon, name, link)
   end
 end
 
+local current_event = "2023"
+
+function html.link(puzzle, event)
+  local link = "/"..(event or current_event)
+  if puzzle then
+    return link.."/"..puzzle
+  end
+  return link
+end
+
 function Github.fetch_user(gh_auth)
   local opts = {
     method = "GET",
@@ -438,8 +448,8 @@ function OnHttpRequest()
   end
 
   routes[cmd]()
-  local url = GetHost(), "/"..cmd..".lua"
-  if puzzle_name then url = url.."?puzzle="..EscapeParam(puzzle_name) end
+  local url = GetHost(), "/"..cmd..".lua?event="..EscapeParam(current_event)
+  if puzzle_name then url = url.."&puzzle="..EscapeParam(puzzle_name) end
   --return Route(url)
 end
 
