@@ -5,8 +5,6 @@ RELEASE_EXE=/tmp/aob.com
 DB_FILE=/tmp/out.db
 AOB_DB_FILE=$(DB_FILE)
 
-DEV_RUN_CMD=./redbean.com -D.
-
 AOB_SOURCES=.init.lua about.lua events.lua index.lua leaderboard.lua \
 			login.lua logout.lua profile.lua puzzle-answer.lua \
 			puzzle-index.lua puzzle-input.lua puzzle-leaderboard.lua \
@@ -15,14 +13,14 @@ AOB_SOURCES=.init.lua about.lua events.lua index.lua leaderboard.lua \
 
 all: dev
 
-test:
-	$(DEV_RUN_CMD) -s server
+test: $(RELEASE_EXE) | $(DB_FILE)
+	$(RELEASE_EXE) -s server
 
-dev: $(DB_FILE)
-	$(DEV_RUN_CMD) server
+dev: $(RELEASE_EXE) | $(DB_FILE)
+	$(RELEASE_EXE) server
 
-$(DB_FILE):
-	$(DEV_RUN_CMD) init
+$(DB_FILE): | $(RELEASE_EXE)
+	$(RELEASE_EXE) init
 
 $(RELEASE_EXE):
 	cp redbean.com $@

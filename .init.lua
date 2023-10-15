@@ -286,7 +286,7 @@ local function main()
       error("Database already exists at '" .. DB_FILE .. "'")
     end
 
-    local schema = assert(Slurp"schema.sql")
+    local schema = assert(Slurp"/zip/schema.sql")
 
     local dbscope <close> = db.open()
     db.exec(schema)
