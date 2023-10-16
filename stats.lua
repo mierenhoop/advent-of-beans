@@ -10,8 +10,8 @@ if norm == 0 then norm = math.huge end
 
 local maxstars = 20
 
-wrt"<table>"
-wrt[[
+html[[
+<table>
 <tr>
 <th>Puzzle</th>
 <th>Gold</th>
@@ -34,20 +34,20 @@ for puzzle_id, gold, silver in db.urows[[
   local ngold = math.ceil(gold / norm * maxstars)
   local nsilver = total - ngold
 
-  local stars = fmt([[
+  local stars = string.format([[
   <span class="stat-gold">%s</span><span class="stat-silver">%s</span>
   ]], ("*"):rep(ngold), ("*"):rep(nsilver))
 
-  wrt(fmt([[
+  html([[
   <tr>
   <td><a href="/%s">%s</a></td>
   <td>%d</td>
   <td>%d</td>
   <td><code>%s</code></td>
   </a>
-  ]], puzzle_name, puzzle_name, gold, silver, stars))
+  ]], puzzle_name, puzzle_name, gold, silver, stars)
 end
-wrt"</table>"
+html[[</table>]]
 
 
 html.page_end()

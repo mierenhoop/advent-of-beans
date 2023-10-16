@@ -1,7 +1,7 @@
 html.leaderboard_begin()
 
 local function dayleaderboard(star)
-  wrt[[<ol>]]
+  html[[<ol>]]
   for user_id, name, link, anon, time in db.urows([[
     SELECT user_id, name, link, anonymous, time
     FROM achievement
@@ -10,18 +10,18 @@ local function dayleaderboard(star)
       AND type = ?
     ORDER BY achievement.time, achievement.rowid
     LIMIT 100
-    ]], puzzle_id, star) do
-    wrt[[<li>]]
-    wrt(fmt("%.2f ", time))
+    ]], db.puzzle_id, star) do
+    html[[<li>]]
+    html("%.2f ", time)
     html.user(user_id, anon~=0, name, link)
-    wrt[[</li>]]
+    html[[</li>]]
   end
-  wrt[[</ol>]]
+  html[[</ol>]]
 end
 
-wrt"<p>First hundred users to get both stars.</p>"
+html[[<p>First hundred users to get both stars.</p>]]
 dayleaderboard"gold"
-wrt"<p>First hundred users to get a silver star.</p>"
+html[[<p>First hundred users to get a silver star.</p>]]
 dayleaderboard"silver"
 
 html.page_end()

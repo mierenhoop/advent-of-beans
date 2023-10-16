@@ -18,7 +18,7 @@ MAX_WRITES=10
 db = {}
 html = {}
 Github = {}
-wrt, fmt, esc = Write, string.format, EscapeHtml
+wrt, esc = Write, EscapeHtml
 
 function db.open()
   local pid = unix.getpid()
@@ -167,6 +167,15 @@ function db.write_limiter()
   UPDATE write_limiter SET writes = writes + 1 WHERE user_id = ?
   ]], db.user_id)
 end
+
+--local function htmlformat(fmt, ...)
+--  local index = 1
+--  return string.gsub(fmt, "%%[es]", function(v)
+--    local s = tostring(select(index, ...))
+--    index = index + 1
+--    return v == "%e" and EscapeHtml(s) or s
+--  end)
+--end
 
 setmetatable(html, {
   __call = function(_, ...)
@@ -338,7 +347,7 @@ function OnHttpRequest()
 
   if puzzle_name then
     -- global TODO: don't do this
-    puzzle_id = db.urow("SELECT rowid FROM puzzle WHERE name = ?", puzzle_name)
+    db.puzzle_id = db.urow("SELECT rowid FROM puzzle WHERE name = ?", puzzle_name)
   end
 
   routes[cmd]()

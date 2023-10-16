@@ -1,6 +1,6 @@
 html.page_begin()
 
-wrt[[
+html[[
 <p>Advent of code clone made with the Redbean web server and Lua</p>
 ]]
 

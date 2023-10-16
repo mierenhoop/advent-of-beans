@@ -24,11 +24,11 @@ WHERE user_id = ? AND puzzle_id = ?),
 (SELECT time
 FROM achievement
 WHERE user_id = ? AND puzzle_id = ? AND type = ?)
-]], db.user_id, puzzle_id, db.user_id, puzzle_id, target)
+]], db.user_id, db.puzzle_id, db.user_id, db.puzzle_id, target)
 
 -- TODO: use this only once in this/answer.lua
 if next_try and GetTime() < next_try then
-  return ServeRedirect(303, fmt("/%s/answer",puzzle_name))
+  return ServeRedirect(303, string.format("/%s/answer",puzzle_name))
 end
 
 if puzzle_time then return ServeError(400) end -- already correct answer
@@ -37,7 +37,7 @@ SetStatus(303)
 
 local cookie = { target = target }
 
-local target_answer = db.urow(fmt([[
+local target_answer = db.urow(string.format([[
 SELECT %s_answer
 FROM bucket
 WHERE rowid = ?
@@ -54,10 +54,10 @@ if answer == target_answer then
     INSERT INTO achievement(user_id, puzzle_id, time, type) VALUES
     (?, ?, UNIXEPOCH()-(SELECT time_start FROM puzzle WHERE rowid = ?), ?)
     RETURNING rowid
-    ]], db.user_id, puzzle_id, puzzle_id, target)
+    ]], db.user_id, db.puzzle_id, db.puzzle_id, target)
   end)
 
-  Log(kLogInfo, fmt("user %d got puzzle %s", db.user_id, puzzle_name))
+  Log(kLogInfo, string.format("user %d got puzzle %s", db.user_id, puzzle_name))
 else
   fails = (fails or 0)+ 1
   -- 1 > 10s
@@ -77,9 +77,9 @@ else
   next_try = UNIXEPOCH()+?
   WHERE rowid = ?
   ]], fails, waiting_time, db.user_id)
-  Log(kLogInfo, fmt("user %d failed puzzle %d", db.user_id, puzzle_name))
+  Log(kLogInfo, string.format("user %d failed puzzle %d", db.user_id, puzzle_name))
 end
 
 SetCookie(COOKIE_ANSWER, EncodeBase64(EncodeJson(cookie))) -- TODO: expire 10s
 
-SetHeader("Location", fmt("/%s/answer",puzzle_name))
+SetHeader("Location", string.format("/%s/answer",puzzle_name))

@@ -1,17 +1,17 @@
 html.page_begin()
-wrt[[<ul>]]
+html[[<ul>]]
 for name, started in db.urows[[
   SELECT name, time_start <= unixepoch()
   FROM puzzle ORDER BY time_start
   ]] do
-  wrt"<li>"
+  html[[<li>]]
   if started == 1 then
-    wrt(fmt([[<a href="/%s">%s</a>]],
-    esc(name), esc(name)))
+    html([[<a href="/%s">%s</a>]],
+    EscapeHtml(name), EscapeHtml(name))
   else
-    wrt(esc(name))
+    html(EscapeHtml(name))
   end
-  wrt"</li>"
+  html[[</li>]]
 end
-wrt[[</ul>]]
+html[[</ul>]]
 html.page_end()

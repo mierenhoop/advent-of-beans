@@ -24,31 +24,29 @@ SELECT time FROM achievement
 WHERE user_id = ?
 AND puzzle_id = ?
 AND type = ?
-]], db.user_id, puzzle_id, cookie.target)
+]], db.user_id, db.puzzle_id, cookie.target)
 
 html.page_begin()
 
 if next_try and GetTime() < next_try then
-  wrt(fmt("<p>Your answer was %s</p>", esc(cookie.fail_msg))) --TODO: don't show when still waiting
-  wrt(fmt("<p>Wait %.0f seconds</p>", next_try - GetTime()))
+  html([[<p>Your answer was %s</p>]], EscapeHtml(cookie.fail_msg)) --TODO: don't show when still waiting
+  html([[<p>Wait %.0f seconds</p>]], next_try - GetTime())
 elseif answer_time then
   -- TODO: floating point rounding errors?? else just store time as integer
-  wrt(fmt([[
+  html([[
   <p>Your received the <strong class="stat-%s">%s</strong> star.</p>
   <p>Finished puzzle in %.2f seconds.</p>
-  ]], cookie.target, cookie.target, answer_time))
+  ]], cookie.target, cookie.target, answer_time)
   local place = db.urow([[
   SELECT COUNT(time) FROM achievement
   WHERE puzzle_id = ? AND type = ?
   AND rowid <= ? --TODO:BETWEEN
-  ]], puzzle_id, cookie.target, assert(cookie.bucketrow))
-  wrt(fmt([[
-  <p>You placed %d</p>
-  ]], place)) --TODO: use consistent view
+  ]], db.puzzle_id, cookie.target, assert(cookie.bucketrow))
+  html([[<p>You placed %d</p>]], place) --TODO: use consistent view
 else
   return ServeError(400)
 end
 
-wrt(fmt([[<p>Go back to <a href="/%s">the puzzle</a></p>]], puzzle_name))
+html([[<p>Go back to <a href="/%s">the puzzle</a></p>]], puzzle_name)
 
 html.page_end()
