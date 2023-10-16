@@ -20,13 +20,6 @@ html = {}
 Github = {}
 wrt, fmt, esc = Write, string.format, EscapeHtml
 
-local ps,pn = 0, 0
-function time(what)
-  local s, n = unix.clock_gettime()
-  print(fmt("Time: %02d %09d\t%s", s-ps, n-pn, what))
-  ps,pn=s,n
-end
-
 function db.open()
   local pid = unix.getpid()
   assert(db.curpid ~= pid, "db: already open in current process")
@@ -175,62 +168,69 @@ function db.write_limiter()
   ]], db.user_id)
 end
 
+setmetatable(html, {
+  __call = function(_, ...)
+    -- TODO: have specific feature for escaped html...
+    Write(string.format(...))
+  end
+})
+
 function html.page_begin(title)
-  wrt[[<!DOCTYPE html>]]
-  wrt[[<html lang="en">]]
-  wrt[[<meta charset="UTF-8">]]
-  wrt[[<link rel="stylesheet" href="/style.css">]]
-  wrt[[<nav>]]
-  wrt[[<a href="/">Advent</a> | ]]
-  wrt[[<a href="/about">About</a> | ]]
-  wrt[[<a href="/events">Events</a> | ]]
-  wrt[[<a href="/leaderboard">Leaderboard</a> | ]]
-  wrt[[<a href="/stats">Stats</a> | ]]
+  html[[<!DOCTYPE html>]]
+  html[[<html lang="en">]]
+  html[[<meta charset="UTF-8">]]
+  html[[<link rel="stylesheet" href="/style.css">]]
+  html[[<nav>]]
+  html[[<a href="/">Advent</a> | ]]
+  html[[<a href="/about">About</a> | ]]
+  html[[<a href="/events">Events</a> | ]]
+  html[[<a href="/leaderboard">Leaderboard</a> | ]]
+  html[[<a href="/stats">Stats</a> | ]]
   local name
   if db.user_id then
     name = db.urow("SELECT name FROM user WHERE rowid = ?", db.user_id)
   end
-  wrt(fmt([[<a href="/profile">%s</a>]], name and EscapeHtml(name) or "Login"))
+  html([[<a href="/profile">%s</a>]], name and EscapeHtml(name) or "Login")
 
   --html.maybelink("Leaderboard", p ~= "/leaderboard.lua" and "/leaderboard.lua")
-  wrt[[</nav>]]
-  wrt"<main>"
+  html[[</nav>]]
+  html[[<main>]]
 end
 
 function html.page_end()
-  wrt"</main>"
-  wrt[[</html>]]
+  html[[</main>]]
+  html[[</html>]]
 end
 
 function html.leaderboard_begin()
   html.page_begin()
 
-  wrt"<p>Per day:"
+  html[[<p>Per day:]]
   for name in db.urows"SELECT name FROM puzzle ORDER BY time_start" do
     local link = name
     name = EscapeHtml(name)
     if name == puzzle_name then name = "<strong>"..name.."</strong>" end
-    wrt(fmt([[ <a href="/%s/leaderboard">%s</a>]], link, name))
+    html([[ <a href="/%s/leaderboard">%s</a>]], link, name)
   end
-  wrt"</p>"
+  html[[</p>]]
 end
 
 function html.user(user_id, anon, name, link)
   --TODO: avatar
   if anon then
-    wrt("Anonymous #" .. tostring(user_id))
+    html("Anonymous #" .. tostring(user_id))
     return
   end
 
-  wrt(fmt([[<img src="/avatar-%d" height="20">]], user_id))
+  html([[<img src="/avatar-%d" height="20">]], user_id)
 
   name = EscapeHtml(name)
   local host = link and ParseUrl(link).host
   if link and host then
-    wrt(fmt([[<a href="%s">%s</a><sub>[%s]</sub>]],
-    EscapeHtml(link), name, EscapeHtml(host)))
+    html([[<a href="%s">%s</a><sub>[%s]</sub>]],
+    EscapeHtml(link), name, EscapeHtml(host))
   else
-    wrt(name)
+    html(name)
   end
 end
 
@@ -276,127 +276,21 @@ function Github.cache_avatar(user_info)
   end
 end
 
-local function main()
-  local cmd = arg[1]
-  if not cmd then
-    io.write(usage)
-    unix.exit(0)
-  elseif cmd:match"^init" then
-    if path.exists(DB_FILE) then
-      error("Database already exists at '" .. DB_FILE .. "'")
-    end
+if not path.exists(DB_FILE) then
+  local schema = assert(Slurp"/zip/schema.sql")
 
-    local schema = assert(Slurp"/zip/schema.sql")
+  local dbscope <close> = db.open()
+  db.exec(schema)
 
-    local dbscope <close> = db.open()
-    db.exec(schema)
+  db.exec(assert(Slurp"test.sql"))
 
-    db.exec(assert(Slurp"test.sql"))
-
-    for puzzle_id in db.urows"SELECT rowid FROM puzzle" do
-      fill_bucket(puzzle_id, BUCKET_AMOUNT)
-    end
-
-    print("Database initialized at '" .. DB_FILE .. "'")
-
-    unix.exit(0)
-  --[=[elseif cmd:match"^gen" then
-    local p = arg[2]
-    if not p then
-      error"no puzzle path provided"
-    end
-
-    local puzzle = path.basename(p)
-
-    local dbscope <close> = db.open()
-
-    local start, p1, p2, gen = db.urow([[
-    SELECT time_start, part1, part2, gen_code
-    FROM puzzle
-    WHERE name = ?
-    ]], puzzle)
-
-    local function put(filename, content)
-      if path.exists(path.join(p, filename)) then return end
-      assert(Barf(path.join(p, filename), content), 0644)
-    end
-
-    assert(unix.makedirs(p))
-
-    put("start.txt", FormatHttpDateTime(start or os.time()))
-    put("part1.html", p1 or "")
-    put("part2.html", p2 or "")
-    put("gen.lua", gen or "assert(false)")
-    put("deco.txt", ("-"):rep(49))
-
-    print("Generated puzzle template at '" .. p .. "'")
-
-    unix.exit(0)
-  elseif cmd:match"^com" then
-    local p = arg[2]
-    if not p then
-      error"no puzzle path provided"
-    end
-
-    local puzzle = path.basename(p)
-
-    local dbscope <close> = db.open()
-
-    local function get(filename)
-      return assert(Slurp(path.join(p, filename)))
-    end
-
-    local start_txt = assert(get"start.txt":match"^%s*(%g.*%g)%s*$", "start.txt must not be empty")
-    local t = ParseHttpDateTime(start_txt)
-    assert(t ~= 0, "start.txt must be in RFC1123 format")
-    assert(start_txt:sub(-3) == "GMT", "start.txt: timezone must be 'GMT'")
-
-    local p1 = get"part1.html"
-    local p2 = get"part2.html"
-    local gen = get"gen.lua"
-    local deco = get"deco.txt"
-
-    db.urow([[
-    REPLACE INTO puzzle (name, time_start, part1, part2, gen_code)
-    VALUES (?, ?, ?, ?, ?);
-    ]], puzzle, t, p1, p2, gen)
-
-    fill_bucket(puzzle, BUCKET_AMOUNT)
-
-    for user in db.urows[[SELECT rowid FROM user]] do
-      db.get_user_bucket(user, puzzle)
-    end
-
-    print("Committed puzzle '" .. puzzle .. "'")
-
-    unix.exit(0)]=]
-  elseif not cmd:match"^serve" then
-    error("invalid command '" .. cmd .. "'")
+  for puzzle_id in db.urows"SELECT rowid FROM puzzle" do
+    fill_bucket(puzzle_id, BUCKET_AMOUNT)
   end
+
+  Log(kLogInfo, "Database initialized at '" .. DB_FILE .. "'")
 end
 
-local usage = [[
-Usage: ]] .. exe .. [[ [OPTIONS] COMMAND [...]
-
-Options:
-  -h   View all redbean options
-
-Commands:
-  init               Initialize database
-  server             Run the server
-  generate [PUZZLE]  Generate a puzzle template at path PUZZLE
-  commit [PUZZLE]    Commit puzzle at path PUZZLE
-
-Database:
-  Default path: ']] .. defaultdb .. [['.
-  You can specify the database location with environment variable 'AOB_DB_FILE'.
-]]
-
-local ok, err = pcall(main)
-if not ok then
-  io.stderr:write(err .. "\n\n" .. usage)
-  unix.exit(1)
-end
 
 local routes = {}
 
@@ -426,7 +320,7 @@ function OnHttpRequest()
     SetStatus(200)
     --TODO: cache/not modified header thing?
     SetHeader("Content-Type", ct)
-    return wrt(DecodeBase64(body))
+    return Write(DecodeBase64(body))
   end
 
   local cmd

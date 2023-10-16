@@ -2,8 +2,7 @@ include .env
 export
 
 RELEASE_EXE=/tmp/aob.com
-DB_FILE=/tmp/out.db
-AOB_DB_FILE=$(DB_FILE)
+AOB_DB_FILE=/tmp/out.db
 
 AOB_SOURCES=.init.lua about.lua events.lua index.lua leaderboard.lua \
 			login.lua logout.lua profile.lua puzzle-answer.lua \
@@ -13,14 +12,11 @@ AOB_SOURCES=.init.lua about.lua events.lua index.lua leaderboard.lua \
 
 all: dev
 
-test: $(RELEASE_EXE) | $(DB_FILE)
-	$(RELEASE_EXE) -s server
+bench: $(RELEASE_EXE)
+	$(RELEASE_EXE) -s
 
-dev: $(RELEASE_EXE) | $(DB_FILE)
-	$(RELEASE_EXE) server
-
-$(DB_FILE): | $(RELEASE_EXE)
-	$(RELEASE_EXE) init
+dev: $(RELEASE_EXE)
+	$(RELEASE_EXE)
 
 $(RELEASE_EXE):
 	cp redbean.com $@
@@ -32,4 +28,4 @@ release: $(RELEASE_EXE)
 
 clean:
 	rm -f $(RELEASE_EXE)
-	rm -f $(DB_FILE) $(DB_FILE)-wal $(DB_FILE)-shm
+	rm -f $(AOB_DB_FILE) $(AOB_DB_FILE)-wal $(AOB_DB_FILE)-shm

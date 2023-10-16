@@ -17,7 +17,6 @@ As of the time of writing it has the following features:
 * User profile page
 * Github integration
 * Cached remote resources to support private networks
-* All-in-one binary with control of the database via the command line
 * No javascript
 
 Todo list:
