@@ -7,7 +7,7 @@ if time_start > GetTime() then return ServeError(403) end
 
 html.page_begin()
 
-html([[<h1>]]..esc(puzzle_name)..[[</h1>]])
+html([[<h1>]]..EscapeHtml(puzzle_name)..[[</h1>]])
 
 html(p1)
 

@@ -10,8 +10,8 @@ local opts = {
     ["Accept"] = "application/json",
   },
   body = table.concat({
-    "client_id="..EscapeParam(GH_CLIENT_ID),
-    "client_secret="..EscapeParam(GH_CLIENT_SECRET),
+    "client_id="..EscapeParam(github.client_id),
+    "client_secret="..EscapeParam(github.client_secret),
     "code="..EscapeParam(code),
   }, "&"),
 }
@@ -23,7 +23,7 @@ local stat, _, body = assert(Fetch(gh_at_link, opts))
 assert(stat == 200)
 
 local token = assert(assert(DecodeJson(body)).access_token)
-local user_json = Github.fetch_user(token)
+local user_json = github.fetch_user(token)
 
 local gh_id = assert(user_json.id)
 
@@ -46,6 +46,6 @@ db.urow("DELETE FROM session WHERE user_id = ?", user_id)
 db.urow("INSERT INTO session(user_id, token) VALUES (?, ?)", user_id, cookie)
 
 SetStatus(303)
-SetCookie(COOKIE_KEY, cookie)
+SetCookie(db.cookie_key, cookie)
 
 return SetHeader("Location", "/profile")

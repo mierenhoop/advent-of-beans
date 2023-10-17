@@ -80,6 +80,6 @@ else
   Log(kLogInfo, string.format("user %d failed puzzle %d", db.user_id, puzzle_name))
 end
 
-SetCookie(COOKIE_ANSWER, EncodeBase64(EncodeJson(cookie))) -- TODO: expire 10s
+SetCookie(db.cookie_answer, EncodeBase64(EncodeJson(cookie))) -- TODO: expire 10s
 
 SetHeader("Location", string.format("/%s/answer",puzzle_name))

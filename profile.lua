@@ -39,7 +39,7 @@ else
 
   local link = "https://github.com/login/oauth/authorize"
   .. "?scope="
-  .. "&client_id=" .. EscapeParam(GH_CLIENT_ID)
+  .. "&client_id=" .. EscapeParam(github.client_id)
   --.. "&redirect_uri=" .. EscapeParam(EncodeUrl(redir))
 
   html([[

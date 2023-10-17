@@ -14,14 +14,14 @@ if db.write_limiter() then return end
 
 if not anon then
   local gh_auth = db.urow("SELECT gh_auth FROM user WHERE rowid = ?", db.user_id)
-  local user_info = Github.fetch_user(gh_auth)
+  local user_info = github.fetch_user(gh_auth)
   local name = assert(user_info.login)
   db.urow([[
   UPDATE user
   SET name = ?, link = ?, anonymous = false
   WHERE rowid = ?]], name, link, db.user_id)
 
-  Github.cache_avatar(user_info)
+  github.cache_avatar(user_info)
 else
   db.urow("UPDATE user SET link = ?, anonymous = true WHERE rowid = ?",
   link, db.user_id)

@@ -5,5 +5,5 @@ if db.user_id then
 end
 
 SetStatus(303)
-SetCookie(COOKIE_KEY, "", { expires = 0 })
+SetCookie(db.cookie_key, "", { expires = 0 })
 return SetHeader("Location", "/profile")

@@ -2,23 +2,20 @@ local exe = arg[-1]
 local exedir = path.dirname(exe)
 
 local defaultdb = path.join(exedir, "aob.db")
-DB_FILE = os.getenv"AOB_DB_FILE" or defaultdb
+local DB_FILE = os.getenv"AOB_DB_FILE" or defaultdb
 
-GH_CLIENT_ID = assert(os.getenv"AOB_GH_CLIENT_ID")
-GH_CLIENT_SECRET = assert(os.getenv"AOB_GH_CLIENT_SECRET")
+local LEADERBOARD_INTERVAL = 3
+local BUCKET_AMOUNT=1000
 
-COOKIE_KEY="advent_session"
-COOKIE_ANSWER="advent_answer"
-
-LEADERBOARD_INTERVAL = 3
-BUCKET_AMOUNT=1000
-
-MAX_WRITES=10
+local MAX_WRITES=10
 
 db = {}
+db.cookie_key = "advent_session"
+db.cookie_answer = "advent_answer"
 html = {}
-Github = {}
-wrt, esc = Write, EscapeHtml
+github = {}
+github.client_id = assert(os.getenv"AOB_GH_CLIENT_ID")
+github.client_secret = assert(os.getenv"AOB_GH_CLIENT_SECRET")
 
 function db.open()
   local pid = unix.getpid()
@@ -67,10 +64,8 @@ function db.exec(sql)
 end
 
 function db.urow(sql, ...)
-  local stmt = prep(sql, ...)
-  local rows = table.pack(stmt:urows()(stmt))
-  dbok(stmt:finalize())
-  return table.unpack(rows)
+  local iter, state, _, closer <close> = db.urows(sql, ...)
+  return iter(state)
 end
 
 function db.urows(sql, ...)
@@ -97,7 +92,7 @@ end
 
 local curtoken, curuser
 function db.get_session_user_id() -- simply cached
-  local token = GetCookie(COOKIE_KEY)
+  local token = GetCookie(db.cookie_key)
   if not token then return nil end
   if token == curtoken then return curuser end
   curtoken, curuser = token, db.urow("SELECT user_id FROM session WHERE token = ?", token)
@@ -225,7 +220,7 @@ function html.leaderboard_begin()
 end
 
 function html.user(user_id, anon, name, link)
-  --TODO: avatar
+  --TODO: lazy load avatar
   if anon then
     html("Anonymous #" .. tostring(user_id))
     return
@@ -253,7 +248,7 @@ function html.link(puzzle, event)
   return link
 end
 
-function Github.fetch_user(gh_auth)
+function github.fetch_user(gh_auth)
   local opts = {
     method = "GET",
     headers = {
@@ -267,7 +262,7 @@ function Github.fetch_user(gh_auth)
   return assert(DecodeJson(body))
 end
 
-function Github.cache_avatar(user_info)
+function github.cache_avatar(user_info)
   if assert(unix.fork()) == 0 then -- async download avatar
     local url = ParseUrl(assert(user_info.avatar_url))
     print(EncodeLua(url), user_info.avatar_url)

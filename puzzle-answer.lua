@@ -3,7 +3,7 @@ if not db.user_id then
   return ServeRedirect(303, "/profile")
 end
 
-local cookie = DecodeJson(DecodeBase64(GetCookie(COOKIE_ANSWER)))
+local cookie = DecodeJson(DecodeBase64(GetCookie(db.cookie_answer)))
 if not cookie then
   Log(kLogWarning, "user visited answer with expired cookie")
   return ServeError(400)
