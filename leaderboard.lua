@@ -1,7 +1,7 @@
 html.leaderboard_begin()
 
 html("<p>This leaderboard gets updated once every %d seconds</p>",
-LEADERBOARD_INTERVAL)
+config.LEADERBOARD_INTERVAL)
 html[[<ol>]]
 for user_id, name, link, anon, score in db.urows[[
   SELECT user_id, name, link, anonymous, score

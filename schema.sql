@@ -1,4 +1,6 @@
 -- vim: et sw=2 sts=2
+PRAGMA journal_mode=wal;
+PRAGMA synchronous=normal; -- TODO: is this temporary or needed at all?
 
 CREATE TABLE IF NOT EXISTS user (
   name      TEXT NOT NULL,

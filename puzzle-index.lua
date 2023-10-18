@@ -7,7 +7,7 @@ if time_start > GetTime() then return ServeError(403) end
 
 html.page_begin()
 
-html([[<h1>]]..EscapeHtml(puzzle_name)..[[</h1>]])
+html([[<h1>]]..EscapeHtml(db.puzzle_name)..[[</h1>]])
 
 html(p1)
 
@@ -32,7 +32,7 @@ end
 
 local function html_input(atype)
   html([[
-  <form action="/%s/submit" method="POST">]], puzzle_name)
+  <form action="/%s/submit" method="POST">]], db.puzzle_name)
   html([[
   <input type="hidden" name="type" value="%s" />
   ]], atype)
@@ -67,7 +67,7 @@ if times.silver then
     html_input"gold"
     html([[
     <p>You can still <a href="/%s/input">get your input</a></p>
-    ]], puzzle_name)
+    ]], db.puzzle_name)
   else
     html_receive("gold", gold_answer)
   end
@@ -75,7 +75,7 @@ else
   html_input"silver"
   html([[
   <p><a href="/%s/input">Get your input</a></p>
-  ]], puzzle_name)
+  ]], db.puzzle_name)
 end
 
 html.page_end()

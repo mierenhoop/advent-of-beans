@@ -28,7 +28,7 @@ WHERE user_id = ? AND puzzle_id = ? AND type = ?)
 
 -- TODO: use this only once in this/answer.lua
 if next_try and GetTime() < next_try then
-  return ServeRedirect(303, string.format("/%s/answer",puzzle_name))
+  return ServeRedirect(303, string.format("/%s/answer", db.puzzle_name))
 end
 
 if puzzle_time then return ServeError(400) end -- already correct answer
@@ -57,7 +57,7 @@ if answer == target_answer then
     ]], db.user_id, db.puzzle_id, db.puzzle_id, target)
   end)
 
-  Log(kLogInfo, string.format("user %d got puzzle %s", db.user_id, puzzle_name))
+  Log(kLogInfo, string.format("user %d got puzzle %s", db.user_id, db.puzzle_name))
 else
   fails = (fails or 0)+ 1
   -- 1 > 10s
@@ -77,9 +77,9 @@ else
   next_try = UNIXEPOCH()+?
   WHERE rowid = ?
   ]], fails, waiting_time, db.user_id)
-  Log(kLogInfo, string.format("user %d failed puzzle %d", db.user_id, puzzle_name))
+  Log(kLogInfo, string.format("user %d failed puzzle %d", db.user_id, db.puzzle_name))
 end
 
 SetCookie(db.cookie_answer, EncodeBase64(EncodeJson(cookie))) -- TODO: expire 10s
 
-SetHeader("Location", string.format("/%s/answer",puzzle_name))
+SetHeader("Location", string.format("/%s/answer", db.puzzle_name))

@@ -4,8 +4,9 @@ local exedir = path.dirname(exe)
 local defaultdb = path.join(exedir, "aob.db")
 local DB_FILE = os.getenv"AOB_DB_FILE" or defaultdb
 
-local LEADERBOARD_INTERVAL = 3
-local BUCKET_AMOUNT=1000
+config = {}
+config.LEADERBOARD_INTERVAL = 3
+config.BUCKET_AMOUNT=1000
 
 local MAX_WRITES=10
 
@@ -26,11 +27,6 @@ function db.open()
   Log(kLogInfo, "db: open, pid: " .. pid)
 
   db._db:busy_timeout(1000)
-  -- TODO: these PRAGMA's are relatively expensive
-  pcall(db.exec, [[
-  PRAGMA journal_mode=wal;
-  PRAGMA synchronous=normal;
-  ]])
   return setmetatable({}, {
     __close = function()
       db.close()
@@ -78,10 +74,15 @@ function db.urows(sql, ...)
   return stmt:urows(), stmt, nil, closer
 end
 
+local intrans = false
 function db.transaction(f)
+  if intrans then return f() end
+
   db.exec"BEGIN TRANSACTION;"
 
+  intrans = true
   local ok, err = pcall(f)
+  intrans = false
   if not ok then
     db.exec"ROLLBACK;"
     error(err)
@@ -210,10 +211,10 @@ function html.leaderboard_begin()
   html.page_begin()
 
   html[[<p>Per day:]]
-  for name in db.urows"SELECT name FROM puzzle ORDER BY time_start" do
+  for id, name in db.urows"SELECT rowid, name FROM puzzle ORDER BY time_start" do
     local link = name
     name = EscapeHtml(name)
-    if name == puzzle_name then name = "<strong>"..name.."</strong>" end
+    if id == db.puzzle_id then name = "<strong>"..name.."</strong>" end
     html([[ <a href="/%s/leaderboard">%s</a>]], link, name)
   end
   html[[</p>]]
@@ -289,7 +290,7 @@ if not path.exists(DB_FILE) then
   db.exec(assert(Slurp"test.sql"))
 
   for puzzle_id in db.urows"SELECT rowid FROM puzzle" do
-    fill_bucket(puzzle_id, BUCKET_AMOUNT)
+    fill_bucket(puzzle_id, config.BUCKET_AMOUNT)
   end
 
   Log(kLogInfo, "Database initialized at '" .. DB_FILE .. "'")
@@ -329,25 +330,28 @@ function OnHttpRequest()
 
   local cmd
 
-  puzzle_name, cmd = p:match"^/(%d%d?)/?(%l*)$"
+  db.puzzle_name, cmd = p:match"^/(%d%d?)/?(%l*)$"
   if not cmd then cmd = p:match"^/(%l*)$" end
   if not cmd then return ServeError(404) end
   if cmd == "" then cmd = "index" end
-  if puzzle_name then cmd = "puzzle-" .. cmd end
+  if db.puzzle_name then cmd = "puzzle-" .. cmd end
 
   --print("Access", "/"..cmd..".lua")
 
   local dbscope <close> = db.open()
   db.user_id = db.get_session_user_id()
 
-  if puzzle_name then
+  if db.puzzle_name then
     -- global TODO: don't do this
-    db.puzzle_id = db.urow("SELECT rowid FROM puzzle WHERE name = ?", puzzle_name)
+    db.puzzle_id = db.urow("SELECT rowid FROM puzzle WHERE name = ?", db.puzzle_name)
   end
 
+  event_name = event_name or current_event
+  db.event_id = db.urow("SELECT rowid FROM event WHERE name = ?", event_name)
+
   routes[cmd]()
-  local url = GetHost(), "/"..cmd..".lua?event="..EscapeParam(current_event)
-  if puzzle_name then url = url.."&puzzle="..EscapeParam(puzzle_name) end
+  --local url = GetHost(), "/"..cmd..".lua?event="..EscapeParam(event_name)
+  --if puzzle_name then url = url.."&puzzle="..EscapeParam(puzzle_name) end
   --return Route(url)
 end
 
@@ -376,4 +380,4 @@ function OnServerHeartbeat()
   ]]
 end
 
-ProgramHeartbeatInterval(LEADERBOARD_INTERVAL * 1000) -- 10s
+ProgramHeartbeatInterval(config.LEADERBOARD_INTERVAL * 1000) -- 10s

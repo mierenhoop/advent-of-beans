@@ -47,6 +47,6 @@ else
   return ServeError(400)
 end
 
-html([[<p>Go back to <a href="/%s">the puzzle</a></p>]], puzzle_name)
+html([[<p>Go back to <a href="/%s">the puzzle</a></p>]], db.puzzle_name)
 
 html.page_end()
