@@ -82,4 +82,4 @@ end
 
 SetCookie(db.cookie_answer, EncodeBase64(EncodeJson(cookie))) -- TODO: expire 10s
 
-SetHeader("Location", string.format("/%s/answer", db.puzzle_name))
+SetHeader("Location", string.format("%s", html.linkpuzzle"answer"))

@@ -6,8 +6,9 @@ for name, started in db.urows[[
   ]] do
   html[[<li>]]
   if started == 1 then
-    html([[<a href="/%s">%s</a>]],
-    EscapeHtml(name), EscapeHtml(name))
+    html([[<a href="%s">%s</a>]], EscapeHtml(html.linkpuzzle(nil, name)), EscapeHtml(name))
+    --html([[<a href="/%s">%s</a>]],
+    --EscapeHtml(name), EscapeHtml(name))
   else
     html(EscapeHtml(name))
   end

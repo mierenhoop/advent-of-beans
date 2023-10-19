@@ -40,12 +40,12 @@ for puzzle_id, gold, silver in db.urows[[
 
   html([[
   <tr>
-  <td><a href="/%s">%s</a></td>
+  <td><a href="%s">%s</a></td>
   <td>%d</td>
   <td>%d</td>
   <td><code>%s</code></td>
   </a>
-  ]], puzzle_name, puzzle_name, gold, silver, stars)
+  ]], EscapeHtml(html.linkpuzzle(nil, puzzle_name)), puzzle_name, gold, silver, stars)
 end
 html[[</table>]]
 

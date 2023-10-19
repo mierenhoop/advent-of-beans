@@ -14,7 +14,8 @@ for event_id, event_name in db.urows[[
   WHERE user_id = ?
   AND event_id = ?
   ]], db.user_id, event_id)
-  html([[<p><a href="/">%s</a>: <strong>%d</strong> %s</p>]], EscapeHtml(event_name), stars, stars == 1 and "star" or "stars")
+  html([[<p><a href="%s">%s</a>: <strong>%d</strong> %s</p>]],
+  EscapeHtml(html.link(nil, event_name)), EscapeHtml(event_name), stars, stars == 1 and "star" or "stars")
   html[[</li>]]
 end
 html[[</ul>]]

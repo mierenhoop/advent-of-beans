@@ -32,7 +32,7 @@ end
 
 local function html_input(atype)
   html([[
-  <form action="/%s/submit" method="POST">]], db.puzzle_name)
+  <form action="%s" method="POST">]], EscapeHtml(html.linkpuzzle"submit"))
   html([[
   <input type="hidden" name="type" value="%s" />
   ]], atype)
@@ -65,17 +65,15 @@ if times.silver then
 
   if not times.gold then
     html_input"gold"
-    html([[
-    <p>You can still <a href="/%s/input">get your input</a></p>
-    ]], db.puzzle_name)
+    html([[<p>You can still <a href="%s">get your input</a></p>]],
+    EscapeHtml(html.linkpuzzle"input"))
   else
     html_receive("gold", gold_answer)
   end
 else
   html_input"silver"
-  html([[
-  <p><a href="/%s/input">Get your input</a></p>
-  ]], db.puzzle_name)
+  html([[<p><a href="%s">Get your input</a></p>]],
+  EscapeHtml(html.linkpuzzle"input"))
 end
 
 html.page_end()

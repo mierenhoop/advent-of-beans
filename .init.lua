@@ -187,15 +187,15 @@ function html.page_begin(title)
   html[[<link rel="stylesheet" href="/style.css">]]
   html[[<nav>]]
   html[[<a href="/">Advent</a> | ]]
-  html[[<a href="/about">About</a> | ]]
-  html[[<a href="/events">Events</a> | ]]
-  html[[<a href="/leaderboard">Leaderboard</a> | ]]
-  html[[<a href="/stats">Stats</a> | ]]
+  html([[<a href="%s">About</a> | ]], EscapeHtml(html.link"about"))
+  html([[<a href="%s">Events</a> | ]], EscapeHtml(html.link"events"))
+  html([[<a href="%s">Leaderboard</a> | ]], EscapeHtml(html.link"leaderboard"))
+  html([[<a href="%s">Stats</a> | ]], EscapeHtml(html.link"stats"))
   local name
   if db.user_id then
     name = db.urow("SELECT name FROM user WHERE rowid = ?", db.user_id)
   end
-  html([[<a href="/profile">%s</a>]], name and EscapeHtml(name) or "Login")
+  html([[<a href="%s">%s</a>]], EscapeHtml(html.link"profile"), name and EscapeHtml(name) or "Login")
 
   --html.maybelink("Leaderboard", p ~= "/leaderboard.lua" and "/leaderboard.lua")
   html[[</nav>]]
@@ -215,7 +215,8 @@ function html.leaderboard_begin()
     local link = name
     name = EscapeHtml(name)
     if id == db.puzzle_id then name = "<strong>"..name.."</strong>" end
-    html([[ <a href="/%s/leaderboard">%s</a>]], link, name)
+    html([[ <a href="%s">%s</a>]],
+    EscapeHtml(html.linkpuzzle("leaderboard", link)), name)
   end
   html[[</p>]]
 end
@@ -241,10 +242,19 @@ end
 
 local current_event = "2023"
 
-function html.link(puzzle, event)
-  local link = "/"..(event or current_event)
-  if puzzle then
-    return link.."/"..puzzle
+function html.linkpuzzle(path, puzzle_name, event_name)
+  local ret = "/"..EscapeSegment(event_name or db.event_name)
+  .."/day/"..EscapeSegment(puzzle_name or db.puzzle_name)
+  if path then
+    return ret.."/"..path
+  end
+  return ret
+end
+
+function html.link(path, event_name)
+  local link = "/"..EscapeSegment(event_name or db.event_name)
+  if path then
+    return link.."/"..path
   end
   return link
 end
@@ -266,11 +276,9 @@ end
 function github.cache_avatar(user_info)
   if assert(unix.fork()) == 0 then -- async download avatar
     local url = ParseUrl(assert(user_info.avatar_url))
-    print(EncodeLua(url), user_info.avatar_url)
     table.insert(url.params, {"s", "20"}) -- prefer 20x20 image
     local stat, headers, body = assert(Fetch(assert(EncodeUrl(url))))
     assert(stat == 200)
-    print(EncodeLua(headers))
     local ct = assert(headers["Content-Type"])
     -- TODO: put these in different database?
     local dbscope <close> = db.open()
@@ -328,31 +336,27 @@ function OnHttpRequest()
     return Write(DecodeBase64(body))
   end
 
-  local cmd
+  db.event_name = p:match"^/(%d+)"
+  if db.event_name then p = p:sub(#db.event_name+2) end
 
-  db.puzzle_name, cmd = p:match"^/(%d%d?)/?(%l*)$"
-  if not cmd then cmd = p:match"^/(%l*)$" end
-  if not cmd then return ServeError(404) end
-  if cmd == "" then cmd = "index" end
+  db.puzzle_name = p:match"^/day/(%d+)"
+  if db.puzzle_name then p = p:sub(#db.puzzle_name+6) end
+
+  local cmd = p:match"^/(%l*)$"
+  if not cmd or cmd == "" then cmd = "index" end
   if db.puzzle_name then cmd = "puzzle-" .. cmd end
 
-  --print("Access", "/"..cmd..".lua")
+  if not routes[cmd] then return ServeError(404) end
 
   local dbscope <close> = db.open()
   db.user_id = db.get_session_user_id()
 
-  if db.puzzle_name then
-    -- global TODO: don't do this
-    db.puzzle_id = db.urow("SELECT rowid FROM puzzle WHERE name = ?", db.puzzle_name)
-  end
+  db.puzzle_id = db.puzzle_name and db.urow("SELECT rowid FROM puzzle WHERE name = ?", db.puzzle_name)
 
-  event_name = event_name or current_event
+  db.event_name = db.event_name or current_event
   db.event_id = db.urow("SELECT rowid FROM event WHERE name = ?", event_name)
 
   routes[cmd]()
-  --local url = GetHost(), "/"..cmd..".lua?event="..EscapeParam(event_name)
-  --if puzzle_name then url = url.."&puzzle="..EscapeParam(puzzle_name) end
-  --return Route(url)
 end
 
 function OnServerHeartbeat()
