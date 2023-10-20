@@ -1,6 +1,6 @@
 if not db.user_id then
   Log(kLogWarn, "no cookie")
-  return ServeRedirect(303, "/profile")
+  return ServeRedirect(303, html.link"profile")
 end
 
 local cookie = DecodeJson(DecodeBase64(GetCookie(db.cookie_answer)))

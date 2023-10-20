@@ -18,13 +18,19 @@ bench: $(RELEASE_EXE)
 dev: $(RELEASE_EXE)
 	$(RELEASE_EXE)
 
+make-admin:
+	# TODO: don't hardcode id
+	$(RELEASE_EXE) -e "db=lsqlite3.open('$(AOB_DB_FILE)')" \
+		           -e "db:exec[[UPDATE user SET admin = TRUE WHERE rowid = 5]]" \
+				   -e "db:close() unix.exit(0)"
+
 $(RELEASE_EXE):
 	cp redbean.com $@
 	zip $@ $(AOB_SOURCES)
 
 release: $(RELEASE_EXE)
 
-.PHONY: clean release $(RELEASE_EXE)
+.PHONY: clean release $(RELEASE_EXE) make-admin
 
 clean:
 	rm -f $(RELEASE_EXE)

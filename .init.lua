@@ -1,8 +1,5 @@
-local exe = arg[-1]
-local exedir = path.dirname(exe)
-
-local defaultdb = path.join(exedir, "aob.db")
-local DB_FILE = os.getenv"AOB_DB_FILE" or defaultdb
+local DB_FILE = os.getenv"AOB_DB_FILE"
+assert(DB_FILE and DB_FILE ~= "")
 
 config = {}
 config.LEADERBOARD_INTERVAL = 3

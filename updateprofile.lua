@@ -7,7 +7,7 @@ if link == "" then link = nil end-- TODO: parse url
 
 if not db.user_id then
   Log(kLogWarn, "no cookie")
-  return ServeRedirect(303, "/profile")
+  return ServeRedirect(303, html.link"profile")
 end
 
 if db.write_limiter() then return end
@@ -25,7 +25,8 @@ if not anon then
 else
   db.urow("UPDATE user SET link = ?, anonymous = true WHERE rowid = ?",
   link, db.user_id)
+  db.urow("DELETE FROM avatar_cache WHERE user_id = ?", db.user_id)
 end
 
 
-ServeRedirect(303, "/profile")
+ServeRedirect(303, html.link"profile")

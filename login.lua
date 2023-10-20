@@ -48,4 +48,4 @@ db.urow("INSERT INTO session(user_id, token) VALUES (?, ?)", user_id, cookie)
 SetStatus(303)
 SetCookie(db.cookie_key, cookie)
 
-return SetHeader("Location", "/profile")
+return SetHeader("Location", html.link"profile")

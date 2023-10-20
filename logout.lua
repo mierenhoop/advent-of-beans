@@ -6,4 +6,4 @@ end
 
 SetStatus(303)
 SetCookie(db.cookie_key, "", { expires = 0 })
-return SetHeader("Location", "/profile")
+return SetHeader("Location", html.link"profile")

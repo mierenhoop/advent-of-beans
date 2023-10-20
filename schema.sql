@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS user (
   gh_id     INTEGER NOT NULL,
   gh_auth   TEXT NOT NULL,
   anonymous INTEGER NOT NULL DEFAULT TRUE, -- 0 -> false, 1 -> true
+  admin     INTEGER NOT NULL DEFAULT FALSE,
 
   next_try    INTEGER,
   fails       INTEGER
