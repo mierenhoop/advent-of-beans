@@ -28,10 +28,7 @@ AND type = ?
 
 html.page_begin()
 
-if next_try and GetTime() < next_try then
-  html([[<p>Your answer was %s</p>]], EscapeHtml(cookie.fail_msg)) --TODO: don't show when still waiting
-  html([[<p>Wait %.0f seconds</p>]], next_try - GetTime())
-elseif answer_time then
+if answer_time then
   -- TODO: floating point rounding errors?? else just store time as integer
   html([[
   <p>Your received the <strong class="stat-%s">%s</strong> star.</p>
@@ -43,8 +40,13 @@ elseif answer_time then
   AND rowid <= ? --TODO:BETWEEN
   ]], db.puzzle_id, cookie.target, assert(cookie.bucketrow))
   html([[<p>You placed %d</p>]], place) --TODO: use consistent view
+elseif next_try then
+  if cookie.fail_msg then
+    html([[<p>Your answer was %s</p>]], EscapeHtml(cookie.fail_msg))
+  end
+  html([[<p>Wait %.0f seconds</p>]], next_try - GetTime())
 else
-  return ServeError(400)
+  return ServeError(500)
 end
 
 html([[<p>Go back to <a href="%s">the puzzle</a></p>]], EscapeHtml(html.linkpuzzle()))

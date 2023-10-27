@@ -26,11 +26,6 @@ FROM achievement
 WHERE user_id = ? AND puzzle_id = ? AND type = ?)
 ]], db.user_id, db.puzzle_id, db.user_id, db.puzzle_id, target)
 
--- TODO: use this only once in this/answer.lua
-if next_try and GetTime() < next_try then
-  return ServeRedirect(303, string.format("/%s/answer", db.puzzle_name))
-end
-
 if puzzle_time then return ServeError(400) end -- already correct answer
 
 SetStatus(303)
@@ -43,7 +38,9 @@ FROM bucket
 WHERE rowid = ?
 ]], target), bucket)
 
-if answer == target_answer then
+if next_try and GetTime() < next_try then
+  cookie.fail_msg = nil
+elseif answer == target_answer then
   db.transaction(function()
     db.urow([[
     UPDATE user
@@ -82,4 +79,4 @@ end
 
 SetCookie(db.cookie_answer, EncodeBase64(EncodeJson(cookie))) -- TODO: expire 10s
 
-SetHeader("Location", string.format("%s", html.linkpuzzle"answer"))
+SetHeader("Location", html.linkpuzzle"answer")
